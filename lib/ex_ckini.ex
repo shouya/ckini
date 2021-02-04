@@ -37,9 +37,7 @@ defmodule ExCkini do
     quote do
       unquote(var_assignments)
       goals = unquote(goals)
-      fn s ->
-        Subst.bind_goals(s, unquote(goals))
-      end
+      Subst.bind_goals(Subst.empty(), goals)
     end
   end
 

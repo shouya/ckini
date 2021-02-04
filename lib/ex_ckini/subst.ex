@@ -3,11 +3,13 @@ defmodule ExCkini.Subst do
   A stream of {var, val}. Where {var, val} represents a single substitution.
   """
 
+  alias ExCkini.{Var, Term}
 
   defstruct [:car, :cdr]
 
-  @type single_t :: {Var.t()}
-  @type t :: %__MODULE__{}
+  @type assoc_t :: {Var.t(), Term.t()}
+  @type subst_t :: [assoc_t()]
+  @type stream_tt :: %__MODULE__{}
   @type goal :: ExCkini.goal()
 
   def new(car, cdr) do
