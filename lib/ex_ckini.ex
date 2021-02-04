@@ -1,15 +1,14 @@
 defmodule ExCkini do
   alias ExCkini.{Var, Subst}
 
-
-  @type goal :: (Subst.t() -> Subst.t())
+  @type goal :: (Subst.single_t() -> Subst.t())
 
   def succ do
-    fn s -> s end
+    fn s -> Subst.singleton(s) end
   end
 
   def fail do
-    fn _ -> [] end
+    fn _ -> Subst.empty() end
   end
 
   def v === w do
@@ -37,7 +36,10 @@ defmodule ExCkini do
 
     quote do
       unquote(var_assignments)
-      bind(unquote(goals), )
+      goals = unquote(goals)
+      fn s ->
+        Subst.bind_goals(s, unquote(goals))
+      end
     end
   end
 

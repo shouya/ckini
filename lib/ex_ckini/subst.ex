@@ -3,9 +3,12 @@ defmodule ExCkini.Subst do
   A stream of {var, val}. Where {var, val} represents a single substitution.
   """
 
+
   defstruct [:car, :cdr]
 
+  @type single_t :: {Var.t()}
   @type t :: %__MODULE__{}
+  @type goal :: ExCkini.goal()
 
   def new(car, cdr) do
     %__MODULE__{car: car, cdr: cdr}
@@ -30,12 +33,20 @@ defmodule ExCkini.Subst do
     new({var, val}, subs)
   end
 
+  @spec bind_goal(t(), goal()) :: t()
   def bind_goal(nil, _g), do: nil
 
-  def bind_goal(subs, g) do
-    g.(subs)
+  def bind_goal(%{car: x, cdr: xs}, g) do
+    case f.(x) do
+      nil ->
+        bind_goal(xs, g)
+
+      %{car: v, cdr: vs} ->
+        new(v, fn -> cached(vs, fn -> bind_goal(xs, g) end) end)
+    end
   end
 
+  @spec bind_goals(t(), [goal()]) :: t()
   def bind_goals(nil, _gs), do: nil
   def bind_goals(subs, []), do: subs
 
@@ -44,4 +55,7 @@ defmodule ExCkini.Subst do
     |> bind_goal(g)
     |> bind_goals(gs)
   end
+
+  defp cached([], f), do: f
+  defp cached([x | xs], f), do: new(x, fn -> cached(xs, f) end)
 end
