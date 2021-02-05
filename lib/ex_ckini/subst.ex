@@ -9,13 +9,24 @@ defmodule ExCkini.Subst do
   @type assoc :: {Var.t(), Term.t()}
   @type t :: [assoc()]
 
-  @spec new(subst, (() -> t())) :: t()
+  @spec new() :: t()
   def new() do
     []
   end
 
-  @spec insert(t(), subst()) :: t()
-  def add(sub, var, val) do
+  @spec insert(t(), Var.t(), Term.t()) :: t()
+  def insert(sub, var, val) do
     [{var, val} | sub]
+  end
+
+  def walk(subst, var) do
+
+  end
+
+  defp assoc(subst, var) do
+    case Enum.find(subst, fn {v, t} -> if Var.eq?(var, v) end), do: t do
+      nil -> nil
+      {_,v} -> v
+    end
   end
 end

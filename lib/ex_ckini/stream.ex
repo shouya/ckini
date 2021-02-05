@@ -1,14 +1,15 @@
 defmodule ExCkini.Stream do
   @moduledoc """
-  This Subst module represents a stream of substitutions.
+  This module represents a stream of substitutions.
   """
 
-  alias ExCkini.{Var, Term, Subst}
+  alias ExCkini.{Subst}
 
   defstruct [:car, :cdr]
 
-  @type t :: %__MODULE__{} | nil
+  @type t :: nil | %__MODULE__{}
   @type subst :: Subst.t()
+  @type goal :: ExCkini.goal()
 
   @spec new(subst, (() -> t())) :: t()
   def new(car, cdr) do
@@ -42,7 +43,7 @@ defmodule ExCkini.Stream do
   def bind_goal(nil, _g), do: nil
 
   def bind_goal(%{car: x, cdr: xs}, g) do
-    case f.(x) do
+    case g.(x) do
       nil ->
         bind_goal(xs, g)
 
@@ -61,7 +62,9 @@ defmodule ExCkini.Stream do
     |> bind_goals(gs)
   end
 
-  @spec cached([subst], (() -> t())) :: t()
-  defp cached([], f), do: f.()
-  defp cached([x | xs], f), do: new(x, fn -> cached(xs, f) end)
+  @spec cached(t(), (() -> t())) :: t()
+  defp cached(nil, f), do: f.()
+
+  defp cached(%{car: x, cdr: xs}, f),
+    do: new(x, fn -> cached(xs, f) end)
 end
