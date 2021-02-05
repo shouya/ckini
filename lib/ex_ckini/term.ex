@@ -1,7 +1,7 @@
 defmodule ExCkini.Term do
   @moduledoc false
 
-  alias ExCkini.Var
+  alias ExCkini.{Var, Subst}
 
   @type t :: atom() | binary() | integer() | Var.t() | [t()]
 
@@ -23,5 +23,10 @@ defmodule ExCkini.Term do
 
   def list?(t) do
     is_list(t)
+  end
+
+  def reify(t, subs) do
+    t = Subst.deep_walk(subs, t)
+    Subst.deep_walk(Subst.reify(t), t)
   end
 end

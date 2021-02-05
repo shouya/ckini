@@ -31,7 +31,33 @@ defmodule ExCkini.Subst do
     end
   end
 
+  def deep_walk(sub, var) do
+    case walk(sub, var) do
+      %Var{} = t -> t
+      ts when is_list(ts) -> Enum.map(ts, &deep_walk(sub, &1))
+      t -> t
+    end
+  end
+
+  @spec reify(t(), Term.t()) :: t()
+  def reify(subs \\ new(), t) do
+    case Subst.walk(subs, t) do
+      %Var{} = v ->
+        Subst.insert(subs, v, reify_name(length(subs)))
+
+      [t | ts] ->
+        subs |> reify(t) |> reify(ts)
+
+      _ ->
+        subs
+    end
+  end
+
   defp remove(subst, var) do
     List.keydelete(subst, var, 0)
+  end
+
+  defp reify_name(n) do
+    :"_.#{n}"
   end
 end

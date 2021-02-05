@@ -66,7 +66,10 @@ defmodule ExCkini do
       |> Stream.singleton()
       |> Stream.bind_goals(goals)
       |> Enum.take(1)
-      |> Enum.map(&Subst.reify(&1, unquote(Macro.escape(logic_var))))
+      |> Enum.map(fn subst ->
+        t = Subst.deep_walk(subst, unquote(Macro.escape(logic_var)))
+        Term.reify(t)
+      end)
     end
   end
 
