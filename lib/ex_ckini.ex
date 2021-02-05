@@ -48,8 +48,9 @@ defmodule ExCkini do
     end
   end
 
-  defmacro run({:fn, _, [{:->, _, [vars, body]}]}) do
-    var_assignments = to_var_assignments(vars)
+  defmacro run({:fn, _, [{:->, _, [[var], body]}]}) do
+    logic_var = to_logic_vars([var])
+    var_assignments = to_var_assignments([var], [logic_var])
 
     goals =
       case body do
@@ -57,15 +58,21 @@ defmodule ExCkini do
         g -> [g]
       end
 
-    quote do
+    quote location: :keep do
       unquote(var_assignments)
       goals = unquote(goals)
-      Stream.bind_goals(Subst.new(), goals)
+
+      Subst.new()
+      |> Stream.singleton()
+      |> Stream.bind_goals(goals)
+      |> Enum.take(1)
+      |> Enum.map(&Subst.reify(&1, unquote(logic_var)))
     end
   end
 
   defmacro fresh({:fn, _, [{:->, _, [vars, body]}]}) do
-    var_assignments = to_var_assignments(vars)
+    logic_vars = to_logic_vars(vars)
+    var_assignments = to_var_assignments(vars, logic_vars)
 
     goals =
       case body do
@@ -73,24 +80,27 @@ defmodule ExCkini do
         g -> [g]
       end
 
-    quote do
+    quote location: :keep do
       fn s ->
         unquote(var_assignments)
-        Stream.bind_goals(s, unquote(goals))
+        Stream.bind_goals(Stream.singleton(s), unquote(goals))
       end
     end
   end
 
-  defp all(gs, subst) do
+  defp to_logic_vars(vars) do
+    for {var, _, _} <- vars do
+      Var.new(var)
+    end
   end
 
-  defp to_var_assignments(vars) do
-    vars
-    |> Enum.map(fn {v, _, _} = vv ->
-      var = Var.new(v)
-      quote(do: unquote(vv) = unquote(Macro.escape(var)))
-    end)
-    |> (fn assigns -> [:__block__, [], assigns] end).()
+  def to_var_assignments(quoted_vars, logic_vars) do
+    exprs =
+      for {qv, lv} <- Enum.zip(quoted_vars, logic_vars) do
+        quote do: unquote(qv) = unquote(Macro.escape(lv))
+      end
+
+    [:__block__, [], exprs]
   end
 
   def hello do
