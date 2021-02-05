@@ -41,9 +41,9 @@ defmodule ExCkini.Subst do
 
   @spec reify(t(), Term.t()) :: t()
   def reify(subs \\ new(), t) do
-    case Subst.walk(subs, t) do
+    case walk(subs, t) do
       %Var{} = v ->
-        Subst.insert(subs, v, reify_name(length(subs)))
+        insert(subs, v, reify_name(length(subs)))
 
       [t | ts] ->
         subs |> reify(t) |> reify(ts)

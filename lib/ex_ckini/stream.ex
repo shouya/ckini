@@ -43,7 +43,7 @@ defmodule ExCkini.Stream do
   @spec bind_goal(t(), goal()) :: t()
   def bind_goal(nil, _g), do: nil
 
-  def bind_goal(%{car: x, cdr: xs}, g) do
+  def bind_goal(%{car: x, cdr: xs} = c, g) do
     case g.(x) do
       nil ->
         bind_goal(xs.(), g)

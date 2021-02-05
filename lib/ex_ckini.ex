@@ -9,7 +9,7 @@ defmodule ExCkini do
     fn s -> Stream.singleton(s) end
   end
 
-  @spec succ :: goal()
+  @spec fail :: goal()
   def fail do
     fn _ -> Stream.empty() end
   end
@@ -51,17 +51,17 @@ defmodule ExCkini do
   defp unify_list(_, _, _s), do: :fail
 
   defmacro run({:fn, _, [{:->, _, [[var], body]}]}) do
-    logic_var = to_logic_vars([var])
+    [logic_var] = to_logic_vars([var])
     var_assignments = to_var_assignments([var], [logic_var])
 
     goals =
       case body do
-        [:__block__, [], gs] -> gs
-        g -> [g]
+        {:__block__, _, gs} -> Enum.map(gs, &Macro.expand(&1, __CALLER__))
+        g -> [Macro.expand(g, __CALLER__)]
       end
 
     quote location: :keep do
-      unquote(var_assignments)
+      unquote_splicing(var_assignments)
       goals = unquote(goals)
 
       Subst.new()
@@ -70,6 +70,7 @@ defmodule ExCkini do
       |> Stream.map(fn subst ->
         Term.reify(unquote(Macro.escape(logic_var)), subst)
       end)
+      |> Stream.take(1)
     end
   end
 
@@ -79,13 +80,13 @@ defmodule ExCkini do
 
     goals =
       case body do
-        [:__block__, [], gs] -> gs
-        g -> [g]
+        {:__block__, _, gs} -> Enum.map(gs, &Macro.expand(&1, __CALLER__))
+        g -> [Macro.expand(g, __CALLER__)]
       end
 
     quote location: :keep do
       fn s ->
-        unquote(var_assignments)
+        unquote_splicing(var_assignments)
         Stream.bind_goals(Stream.singleton(s), unquote(goals))
       end
     end
@@ -110,13 +111,22 @@ defmodule ExCkini do
           fresh(fn y ->
             x === [y, y, 1]
           end)
+
+          x === 1
         end)
-    end
+      end
 
     prog
     |> Macro.expand(__ENV__)
     |> Macro.to_string()
-    |> IO.puts
+    |> IO.puts()
+
+    run(fn x ->
+      fresh(fn y ->
+        x === [y, 1, y]
+      end)
+    end)
+    |> IO.inspect(label: :result)
 
     :ok
   end

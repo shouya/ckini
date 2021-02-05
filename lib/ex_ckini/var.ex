@@ -20,6 +20,6 @@ end
 
 defimpl Inspect, for: ExCkini.Var do
   def inspect(%{sym: sym, id: id}, _opts) do
-    "#{sym}[#{id}]"
+    "'#{sym}[#{id}]"
   end
 end
