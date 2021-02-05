@@ -1,18 +1,19 @@
 defmodule ExCkini.Var do
   @moduledoc "A logic variable"
 
-  # the original_sym stores the symbol used in the code. It is only used for
-  defstruct [:sym, :original_sym]
+  # The sym stores the symbol used in the code. The id is what really
+  # identifies the variable.
+  defstruct [:sym, :id]
   @type t :: %__MODULE__{}
 
   def new(sym) do
     %__MODULE__{
-      sym: System.unique_integer([:positive, :monotonic]),
-      original_sym: sym
+      id: System.unique_integer([:positive, :monotonic]),
+      sym: sym
     }
   end
 
-  def eq?(%__MODULE__{sym: v1}, %__MODULE__{sym: v2}) do
+  def eq?(%__MODULE__{id: v1}, %__MODULE__{id: v2}) do
     v1 == v2
   end
 end
