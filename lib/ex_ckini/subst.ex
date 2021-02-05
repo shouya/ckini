@@ -20,13 +20,18 @@ defmodule ExCkini.Subst do
   end
 
   def walk(subst, var) do
+    case List.keyfind(subst, var, 0) do
+      nil ->
+        var
 
+      {_, t} ->
+        if Term.basic?(t) or Term.list?(t),
+          do: t,
+          else: walk(remove(subst, var), t)
+    end
   end
 
-  defp assoc(subst, var) do
-    case Enum.find(subst, fn {v, t} -> if Var.eq?(var, v) end), do: t do
-      nil -> nil
-      {_,v} -> v
-    end
+  defp remove(subst, var) do
+    List.keydelete(subst, var, 0)
   end
 end
