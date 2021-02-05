@@ -48,6 +48,8 @@ defmodule ExCkini do
     end
   end
 
+  defp unify_list(_, _, _s), do: :fail
+
   defmacro run({:fn, _, [{:->, _, [[var], body]}]}) do
     logic_var = to_logic_vars([var])
     var_assignments = to_var_assignments([var], [logic_var])
@@ -66,8 +68,7 @@ defmodule ExCkini do
       |> Stream.singleton()
       |> Stream.bind_goals(goals)
       |> Stream.map(fn subst ->
-        t = Subst.deep_walk(subst, unquote(Macro.escape(logic_var)))
-        Term.reify(t)
+        Term.reify(unquote(Macro.escape(logic_var)), subst)
       end)
     end
   end
@@ -97,19 +98,26 @@ defmodule ExCkini do
   end
 
   def to_var_assignments(quoted_vars, logic_vars) do
-    exprs =
-      for {qv, lv} <- Enum.zip(quoted_vars, logic_vars) do
-        quote do: unquote(qv) = unquote(Macro.escape(lv))
-      end
-
-    [:__block__, [], exprs]
+    for {qv, lv} <- Enum.zip(quoted_vars, logic_vars) do
+      quote do: unquote(qv) = unquote(Macro.escape(lv))
+    end
   end
 
   def hello do
-    run(fn x ->
-      fresh(fn y ->
-        x === [y, y, 1]
-      end)
-    end)
+    prog =
+      quote do
+        run(fn x ->
+          fresh(fn y ->
+            x === [y, y, 1]
+          end)
+        end)
+    end
+
+    prog
+    |> Macro.expand(__ENV__)
+    |> Macro.to_string()
+    |> IO.puts
+
+    :ok
   end
 end
