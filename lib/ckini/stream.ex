@@ -1,4 +1,4 @@
-defmodule ExCkini.Stream do
+defmodule Ckini.Stream do
   @moduledoc """
   This module represents a stream data type.
 
@@ -9,7 +9,7 @@ defmodule ExCkini.Stream do
   defstruct [:car, :cdr]
 
   @type t :: nil | %__MODULE__{}
-  @type goal :: ExCkini.goal()
+  @type goal :: Ckini.goal()
 
   @spec new(any(), (() -> t())) :: t()
   def new(car, cdr) do

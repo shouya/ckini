@@ -1,7 +1,7 @@
-defmodule ExCkini.Term do
+defmodule Ckini.Term do
   @moduledoc false
 
-  alias ExCkini.{Var, Subst}
+  alias Ckini.{Var, Subst}
 
   @type t :: atom() | binary() | integer() | Var.t() | [t()]
 

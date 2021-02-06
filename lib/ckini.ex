@@ -1,6 +1,6 @@
-defmodule ExCkini do
+defmodule Ckini do
   import Kernel, except: [===: 2]
-  alias ExCkini.{Var, Subst, Stream, Term}
+  alias Ckini.{Var, Subst, Stream, Term}
 
   @type goal :: (Subst.t() -> Stream.t())
 

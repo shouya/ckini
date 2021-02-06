@@ -1,4 +1,4 @@
-defmodule ExCkini.Var do
+defmodule Ckini.Var do
   @moduledoc "A logic variable"
 
   # The sym stores the symbol used in the code. The id is what really
@@ -25,7 +25,7 @@ defmodule ExCkini.Var do
   end
 end
 
-defimpl Inspect, for: ExCkini.Var do
+defimpl Inspect, for: Ckini.Var do
   def inspect(%{sym: nil, id: id}, _opts) do
     "var_#{id}"
   end

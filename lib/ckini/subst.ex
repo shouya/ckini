@@ -1,10 +1,10 @@
-defmodule ExCkini.Subst do
+defmodule Ckini.Subst do
   @moduledoc """
   A substitution is an ordered list of associations.
   An association is a {var, val} pair. See the type specs below for details.
   """
 
-  alias ExCkini.{Var, Term}
+  alias Ckini.{Var, Term}
 
   @type assoc :: {Var.t(), Term.t()}
   @type t :: [assoc()]

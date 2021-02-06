@@ -1,4 +1,4 @@
-defmodule ExCkini.Macro do
+defmodule Ckini.Macro do
   @moduledoc """
   MiniKanren-like interfaces.
   """
