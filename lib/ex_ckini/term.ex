@@ -25,6 +25,17 @@ defmodule ExCkini.Term do
     is_list(t)
   end
 
+  def reify(ts, subs) when is_list(ts) do
+    Enum.map(ts, &reify(&1, subs))
+  end
+
+  def reify(ts, subs) when is_tuple(ts) do
+    ts
+    |> Tuple.to_list()
+    |> Enum.map(&reify(&1, subs))
+    |> List.to_tuple()
+  end
+
   def reify(t, subs) do
     t = Subst.deep_walk(subs, t)
     Subst.deep_walk(Subst.reify(t), t)

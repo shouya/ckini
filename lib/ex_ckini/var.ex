@@ -6,6 +6,13 @@ defmodule ExCkini.Var do
   defstruct [:sym, :id]
   @type t :: %__MODULE__{}
 
+  def new() do
+    %__MODULE__{
+      id: System.unique_integer([:positive, :monotonic]),
+      sym: nil
+    }
+  end
+
   def new(sym) do
     %__MODULE__{
       id: System.unique_integer([:positive, :monotonic]),
@@ -19,7 +26,10 @@ defmodule ExCkini.Var do
 end
 
 defimpl Inspect, for: ExCkini.Var do
+  def inspect(%{sym: nil, id: id}, _opts) do
+    "var_#{id}"
+  end
   def inspect(%{sym: sym, id: id}, _opts) do
-    "'#{sym}[#{id}]"
+    "#{sym}<#{id}>"
   end
 end

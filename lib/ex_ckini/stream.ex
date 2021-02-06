@@ -26,6 +26,17 @@ defmodule ExCkini.Stream do
     new(s, fn -> nil end)
   end
 
+  @spec concat(t(), t()) :: t()
+  def concat(nil, s), do: s
+
+  def concat(%{car: x, cdr: xs}, s) do
+    new(x, fn -> concat(xs.(), s) end)
+  end
+
+  @spec concat([t()]) :: t()
+  def concat([]), do: nil
+  def concat([x | xs]), do: concat(x, concat(xs))
+
   @spec interleave(t(), t()) :: t()
   def interleave(subs1, nil), do: subs1
   def interleave(nil, subs2), do: subs2
@@ -33,6 +44,10 @@ defmodule ExCkini.Stream do
   def interleave(%{car: x, cdr: xs}, subs2) do
     new(x, fn -> interleave(subs2, xs.()) end)
   end
+
+  @spec interleave([t()]) :: t()
+  def interleave([]), do: nil
+  def interleave([x | xs]), do: interleave(x, interleave(xs))
 
   @spec insert(t(), t()) :: t()
   def insert(stream, v) do
@@ -79,7 +94,7 @@ defmodule ExCkini.Stream do
   end
 
   def to_list(nil), do: []
-  def to_list(%{car: x, cdr: xs}), do: [x, to_list(xs.())]
+  def to_list(%{car: x, cdr: xs}), do: [x | to_list(xs.())]
 
   @spec cached(t(), (() -> t())) :: t()
   defp cached(nil, f), do: f.()

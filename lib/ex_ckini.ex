@@ -50,84 +50,76 @@ defmodule ExCkini do
 
   defp unify_list(_, _, _s), do: :fail
 
-  defmacro run({:fn, _, [{:->, _, [[var], body]}]}) do
-    [logic_var] = to_logic_vars([var])
-    var_assignments = to_var_assignments([var], [logic_var])
+  def run(vars, goals) do
+    stream_of_subst = all(goals).(Subst.new())
 
-    goals =
-      case body do
-        {:__block__, _, gs} -> Enum.map(gs, &Macro.expand(&1, __CALLER__))
-        g -> [Macro.expand(g, __CALLER__)]
-      end
+    stream_of_subst
+    |> Stream.map(fn subst -> Term.reify(vars, subst) end)
+    |> Stream.to_list()
+  end
 
-    quote location: :keep do
-      unquote_splicing(var_assignments)
-      goals = unquote(goals)
+  def run(n, vars, goals) when is_integer(n) and n >= 0 do
+    stream_of_subst = all(goals).(Subst.new())
 
-      Subst.new()
-      |> Stream.singleton()
-      |> Stream.bind_goals(goals)
-      |> Stream.map(fn subst ->
-        Term.reify(unquote(Macro.escape(logic_var)), subst)
-      end)
-      |> Stream.take(1)
+    stream_of_subst
+    |> Stream.map(fn subst -> Term.reify(vars, subst) end)
+    |> Stream.take(n)
+  end
+
+  def to_goal(f) when is_function(f, 0) do
+    case f.() do
+      g when is_function(g, 1) -> g
+      _ -> raise "Please return a goal in a block"
     end
   end
 
-  defmacro fresh({:fn, _, [{:->, _, [vars, body]}]}) do
-    logic_vars = to_logic_vars(vars)
-    var_assignments = to_var_assignments(vars, logic_vars)
+  def to_goal(g) when is_function(g, 1), do: g
 
-    goals =
-      case body do
-        {:__block__, _, gs} -> Enum.map(gs, &Macro.expand(&1, __CALLER__))
-        g -> [Macro.expand(g, __CALLER__)]
-      end
+  def to_goal(gs) when is_list(gs), do: all(gs)
 
-    quote location: :keep do
-      fn s ->
-        unquote_splicing(var_assignments)
-        Stream.bind_goals(Stream.singleton(s), unquote(goals))
-      end
+  def all(goals) do
+    goals = Enum.map(goals, &to_goal(&1))
+
+    fn s ->
+      Stream.bind_goals(Stream.singleton(s), goals)
     end
   end
 
-  defp to_logic_vars(vars) do
-    for {var, _, _} <- vars do
-      Var.new(var)
+  def conde(goals) do
+    goals = Enum.map(goals, &to_goal(&1))
+
+    fn s ->
+      subs = Enum.map(goals, fn g -> g.(s) end)
+      Stream.concat(subs)
     end
   end
 
-  def to_var_assignments(quoted_vars, logic_vars) do
-    for {qv, lv} <- Enum.zip(quoted_vars, logic_vars) do
-      quote do: unquote(qv) = unquote(Macro.escape(lv))
+  def condi(goals) do
+    goals = Enum.map(goals, &to_goal(&1))
+
+    fn s ->
+      subs = Enum.map(goals, fn g -> g.(s) end)
+      Stream.interleave(subs)
     end
   end
 
-  def hello do
-    prog =
-      quote do
-        run(fn x ->
-          fresh(fn y ->
-            x === [y, y, 1]
-          end)
+  def ckini do
+    y = Var.new()
 
-          x === 1
-        end)
-      end
+    run(
+      y,
+      [
+        conde([
+          y === 1,
+          y === 2,
+          fn ->
+            z = Var.new()
+            x = Var.new()
 
-    prog
-    |> Macro.expand(__ENV__)
-    |> Macro.to_string()
-    |> IO.puts()
-
-    run(fn x ->
-      fresh(fn y ->
-        x === [y, 1, y]
-      end)
-    end)
-    |> IO.inspect(label: :result)
-
-    :ok
+            [x, y, z] === [y, z, :hello]
+          end
+        ])
+      ]
+    )
   end
 end
