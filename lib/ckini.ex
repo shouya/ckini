@@ -102,24 +102,4 @@ defmodule Ckini do
       Stream.interleave(subs)
     end
   end
-
-  def ckini do
-    y = Var.new()
-
-    run(
-      y,
-      [
-        conde([
-          y === 1,
-          y === 2,
-          fn ->
-            z = Var.new()
-            x = Var.new()
-
-            [x, y, z] === [y, z, :hello]
-          end
-        ])
-      ]
-    )
-  end
 end
