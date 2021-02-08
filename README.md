@@ -5,30 +5,32 @@ A MiniKanren-like logic programming framework in Elixir.
 ## Usage
 
 ``` elixir
-defmodule Foo do
+  defmodule Demo do
     import Ckini
+    alias Ckini.Var
 
-    def logic do
-        # logic variables needs to be declared manually
-        x = Ckini.Var.new()
-        y = Ckini.Var.new()
-        z = Ckini.Var.new()
+    def readme_demo do
+      x = Var.new()
+      y = Var.new()
+      z = Var.new()
 
-        Ckini.run({x, y, z}, [
-            # simple goal
-            y === 1,
-            # a conde goal
-            conde([y === 2, z === 3, x === 4]),
-            # it can be a block that returns a goal
-            fn ->
-                t = Ckini.Var.new()
-                x === [y, z, t, "hello"]
-            end
-        ])
-
-        # => [{[1, 3, :"_.0", "hello"], 1, 3}]
+      run({x, y, z}, [
+        # simple goal
+        eq(y, 1),
+        # a conde goal
+        conde([eq(y, 2), eq(z, 3), eq(x, 4)]),
+        # you can create logic variable any time
+        fn ->
+          t = Var.new()
+          eq(x, [y, z, t, "hello"])
+        end
+      ])
     end
-end
+  end
+
+  test "demo in README should work correctly" do
+    assert [{[1, 3, :_0, "hello"], 1, 3}] == Demo.readme_demo()
+  end
 ```
 
 

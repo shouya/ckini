@@ -20,7 +20,7 @@ defmodule CkiniTest do
         eq(y, 1),
         # a conde goal
         conde([eq(y, 2), eq(z, 3), eq(x, 4)]),
-        # a goal that contains a fresh variable
+        # you can create logic variable any time
         fn ->
           t = Var.new()
           eq(x, [y, z, t, "hello"])
@@ -47,17 +47,12 @@ defmodule CkiniTest do
   end
 
   def listo(l) do
+    x = Var.new()
+    xs = Var.new()
+
     conde([
       eq(l, []),
-      fn ->
-        x = Var.new()
-        xs = Var.new()
-
-        [
-          eq([x | xs], l),
-          listo(xs)
-        ]
-      end
+      fn -> [eq([x | xs], l), listo(xs)] end
     ])
   end
 
@@ -68,10 +63,10 @@ defmodule CkiniTest do
 
     x = Var.new()
 
-    # condi will interleave goals
+    # condi will interleave the goals
     assert run(x, condi([teacupo.(x), eq(x, 0)])) == [:tea, 0, :cup]
 
-    # conde will perform depth first search
+    # conde will perform depth-first search
     assert run(x, conde([teacupo.(x), eq(x, 0)])) == [:tea, :cup, 0]
   end
 
