@@ -46,54 +46,36 @@ defmodule CkiniTest do
            ]
   end
 
-  test "conde and condi" do
-    x = Var.new()
-    assert run(10, x, condi([[succ, eq(x, :foo)], [eq(x, :bar)]])) == []
-  end
-
-  test "trivial" do
-  end
-
-  def anyo(g) do
-    condi([g, fn -> anyo(g) end])
-  end
-
-  def caro(v, l) do
-    vs = Var.new()
-    eq([v | vs], l)
-  end
-
-  def cdro(vs, l) do
-    v = Var.new()
-    eq([v | vs], l)
-  end
-
-  def conso(v, vs, l) do
-    eq([v | vs], l)
-  end
-
-  def pairo(p) do
-    a = Var.new()
-    b = Var.new()
-    eq([a | b], p)
-  end
-
-  def nullo(l) do
-    eq(l, [])
-  end
-
   def listo(l) do
     conde([
-      nullo(l),
+      eq(l, []),
       fn ->
         x = Var.new()
         xs = Var.new()
 
         [
-          conso(x, xs, l),
+          eq([x | xs], l),
           listo(xs)
         ]
       end
     ])
+  end
+
+  test "condi and conde" do
+    teacupo = fn v ->
+      conde([eq(v, :tea), eq(v, :cup)])
+    end
+
+    x = Var.new()
+
+    # condi will interleave goals
+    assert run(x, condi([teacupo.(x), eq(x, 0)])) == [:tea, 0, :cup]
+
+    # conde will perform depth first search
+    assert run(x, conde([teacupo.(x), eq(x, 0)])) == [:tea, :cup, 0]
+  end
+
+  def anyo(g) do
+    condi([g, fn -> anyo(g) end])
   end
 end
