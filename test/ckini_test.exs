@@ -1,9 +1,10 @@
 defmodule CkiniTest do
   use ExUnit.Case
+  doctest Ckini.Stream
   doctest Ckini
 
   import Ckini
-  alias Ckini.Var
+  alias Ckini.{Var, Stream}
 
   defmodule Demo do
     import Ckini
@@ -32,7 +33,7 @@ defmodule CkiniTest do
     assert [{[1, 3, :_0, "hello"], 1, 3}] == Demo.readme_demo()
   end
 
-  test "list" do
+  test "listo" do
     v = Var.new()
 
     assert run(6, v, listo(v)) == [
@@ -43,6 +44,18 @@ defmodule CkiniTest do
              [:_0, :_1, :_2, :_3],
              [:_0, :_1, :_2, :_3, :_4]
            ]
+  end
+
+  test "conde and condi" do
+    x = Var.new()
+    assert run(10, x, condi([[succ, eq(x, :foo)], [eq(x, :bar)]])) == []
+  end
+
+  test "trivial" do
+  end
+
+  def anyo(g) do
+    condi([g, fn -> anyo(g) end])
   end
 
   def caro(v, l) do
