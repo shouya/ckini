@@ -104,4 +104,10 @@ defmodule Ckini do
       |> Stream.interleave()
     end
   end
+
+  def project(var, f) do
+    fn s ->
+      to_goal(f.(Subst.deep_walk(s, var))).(s)
+    end
+  end
 end

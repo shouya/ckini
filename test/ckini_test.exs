@@ -70,7 +70,15 @@ defmodule CkiniTest do
     assert run(x, conde([teacupo.(x), eq(x, 0)])) == [:tea, :cup, 0]
   end
 
-  def anyo(g) do
-    condi([g, fn -> anyo(g) end])
+  test "project" do
+    q = Var.new()
+
+    # example from TRS
+    assert run(q, [
+             eq(q, false),
+             project(q, fn q ->
+               eq(not (not q), q)
+             end)
+           ])
   end
 end
