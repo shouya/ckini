@@ -26,28 +26,36 @@ defmodule Ckini.Stream do
     new(s, fn -> nil end)
   end
 
-  @spec concat(t(), t()) :: t()
-  def concat(nil, s), do: s
+  @spec concat(t()) :: t()
+  def concat(nil), do: nil
 
-  def concat(%{car: x, cdr: xs}, s) do
-    new(x, fn -> concat(xs.(), s) end)
+  def concat(%{car: x, cdr: xs}) do
+    case x do
+      nil -> concat(xs.())
+      %{car: y, cdr: ys} -> new(y, fn -> concat(new(ys.(), xs)) end)
+    end
   end
 
-  @spec concat([t()]) :: t()
-  def concat([]), do: nil
-  def concat([x | xs]), do: concat(x, concat(xs))
+  # sort of like concat . zip, but no element will be dropped if the
+  # streams are not of equal length.
+  @spec interleave(t()) :: t()
+  def interleave(nil), do: nil
 
-  @spec interleave(t(), t()) :: t()
-  def interleave(subs1, nil), do: subs1
-  def interleave(nil, subs2), do: subs2
-
-  def interleave(%{car: x, cdr: xs}, subs2) do
-    new(x, fn -> interleave(subs2, xs.()) end)
+  def interleave(%{car: x, cdr: xs}) do
+    case x.() do
+      nil -> interleave(xs.())
+      %{car: y, cdr: ys} -> new(y, fn -> interleave(snoc(ys.(), xs)) end)
+    end
   end
 
-  @spec interleave([t()]) :: t()
-  def interleave([]), do: nil
-  def interleave([x | xs]), do: interleave(x, interleave(xs))
+  def rotate1(nil), do: nil
+  def rotate1(%{car: x, cdr: xs}), do: snoc(xs, x)
+
+  def snoc(nil, v), do: singleton(v)
+
+  def snoc(%{car: x, cdr: xs}, v) do
+    new(x, fn -> snoc(xs.(), v) end)
+  end
 
   @spec insert(t(), t()) :: t()
   def insert(stream, v) do
@@ -58,7 +66,7 @@ defmodule Ckini.Stream do
   @spec bind_goal(t(), goal()) :: t()
   def bind_goal(nil, _g), do: nil
 
-  def bind_goal(%{car: x, cdr: xs} = c, g) do
+  def bind_goal(%{car: x, cdr: xs}, g) do
     case g.(x) do
       nil ->
         bind_goal(xs.(), g)
@@ -95,6 +103,9 @@ defmodule Ckini.Stream do
 
   def to_list(nil), do: []
   def to_list(%{car: x, cdr: xs}), do: [x | to_list(xs.())]
+
+  def from_list([]), do: nil
+  def from_list([x | xs]), do: new(x, fn -> from_list(xs) end)
 
   @spec cached(t(), (() -> t())) :: t()
   defp cached(nil, f), do: f.()

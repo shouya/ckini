@@ -1,6 +1,5 @@
 defmodule Ckini do
-  import Kernel, except: [===: 2]
-  alias Ckini.{Var, Subst, Stream, Term}
+  alias Ckini.{Subst, Stream, Term}
 
   @type goal :: (Subst.t() -> Stream.t())
 
@@ -14,12 +13,22 @@ defmodule Ckini do
     fn _ -> Stream.empty() end
   end
 
-  # @spec (===)(Term.t(), Term.t()) :: goal()
-  def v === w do
+  @spec eq(Term.t(), Term.t()) :: goal()
+  def eq(v, w) do
     fn s ->
       case unify(v, w, s) do
         :fail -> Stream.empty()
         new_s -> Stream.singleton(new_s)
+      end
+    end
+  end
+
+  @spec neq(Term.t(), Term.t()) :: goal()
+  def neq(v, w) do
+    fn s ->
+      case unify(v, w, s) do
+        :fail -> Stream.singleton(s)
+        _s -> Stream.empty()
       end
     end
   end
@@ -51,7 +60,7 @@ defmodule Ckini do
   defp unify_list(_, _, _s), do: :fail
 
   def run(vars, goals) do
-    stream_of_subst = all(goals).(Subst.new())
+    stream_of_subst = to_goal(goals).(Subst.new())
 
     stream_of_subst
     |> Stream.map(fn subst -> Term.reify(vars, subst) end)
@@ -59,47 +68,40 @@ defmodule Ckini do
   end
 
   def run(n, vars, goals) when is_integer(n) and n >= 0 do
-    stream_of_subst = all(goals).(Subst.new())
+    stream_of_subst = to_goal(goals).(Subst.new())
 
     stream_of_subst
     |> Stream.map(fn subst -> Term.reify(vars, subst) end)
     |> Stream.take(n)
   end
 
-  def to_goal(f) when is_function(f, 0) do
-    case f.() do
-      g when is_function(g, 1) -> g
-      _ -> raise "Please return a goal in a block"
-    end
-  end
-
   def to_goal(g) when is_function(g, 1), do: g
-
+  def to_goal(f) when is_function(f, 0), do: to_goal(f.())
   def to_goal(gs) when is_list(gs), do: all(gs)
+  def to_goal(_), do: raise("Invalid goal!")
 
   def all(goals) do
-    goals = Enum.map(goals, &to_goal(&1))
-
     fn s ->
+      goals = Enum.map(goals, &to_goal(&1))
       Stream.bind_goals(Stream.singleton(s), goals)
     end
   end
 
   def conde(goals) do
-    goals = Enum.map(goals, &to_goal(&1))
-
     fn s ->
-      subs = Enum.map(goals, fn g -> g.(s) end)
-      Stream.concat(subs)
+      goals
+      |> Stream.from_list()
+      |> Stream.map(fn g -> to_goal(g).(s) end)
+      |> Stream.concat()
     end
   end
 
   def condi(goals) do
-    goals = Enum.map(goals, &to_goal(&1))
-
     fn s ->
-      subs = Enum.map(goals, fn g -> g.(s) end)
-      Stream.interleave(subs)
+      goals
+      |> Stream.from_list()
+      |> Stream.map(fn g -> to_goal(g).(s) end)
+      |> Stream.interleave()
     end
   end
 end

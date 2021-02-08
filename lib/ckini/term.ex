@@ -25,8 +25,10 @@ defmodule Ckini.Term do
     is_list(t)
   end
 
-  def reify(ts, subs) when is_list(ts) do
-    Enum.map(ts, &reify(&1, subs))
+  def reify([], _subs), do: []
+
+  def reify([t | ts], subs) do
+    [reify(t, subs) | reify(ts, subs)]
   end
 
   def reify(ts, subs) when is_tuple(ts) do

@@ -1,6 +1,6 @@
 # Ckini
 
-A MiniKanren-like embedded logic programming framework.
+A MiniKanren-like logic programming framework in Elixir.
 
 ## Usage
 
@@ -33,7 +33,7 @@ end
 
 
 
-API available: `run/2`, `run/3`, `===`, `conde`, `condi`, `all`. (`fresh` is not required in this implementation).
+API available: `run/2`, `run/3`, `===`, `conde`, `condi`, `all`. (`fresh` is not required with this syntax).
 
 I'm still working on a Macro interface to mimic the original TRS miniKanren implementation.
 
@@ -41,6 +41,6 @@ More documentation in progress...
 
 ## Improvement from The Little Schemer (TRS)'s MiniKanren implementation
 
-1. Ckini implementation doesn't use any Macro. As a result, variable assignment needs to be done manually
+1. Ckini implementation doesn't use any Macro. So the `fresh` construct is not needed.
 2. Ckini allows multiple values to be queried in `run`, as opposed to one
 3. Ckini's `walk` implementation has been designed to avoid circular reference

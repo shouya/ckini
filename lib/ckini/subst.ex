@@ -34,7 +34,7 @@ defmodule Ckini.Subst do
   def deep_walk(sub, var) do
     case walk(sub, var) do
       %Var{} = t -> t
-      ts when is_list(ts) -> Enum.map(ts, &deep_walk(sub, &1))
+      [t | ts] -> [deep_walk(sub, t) | deep_walk(sub, ts)]
       t -> t
     end
   end
@@ -58,6 +58,6 @@ defmodule Ckini.Subst do
   end
 
   defp reify_name(n) do
-    :"_.#{n}"
+    :"_#{n}"
   end
 end
