@@ -73,6 +73,7 @@ defmodule Ckini do
     stream_of_subst
     |> Stream.map(fn subst -> Term.reify(vars, subst) end)
     |> Stream.take(n)
+    |> Stream.to_list()
   end
 
   def to_goal(g) when is_function(g, 1), do: g
@@ -106,6 +107,34 @@ defmodule Ckini do
       |> Stream.from_list()
       |> Stream.map(fn g -> to_goal(g).(s) end)
       |> Stream.interleave()
+    end
+  end
+
+  @doc """
+  conda returns the first successful match of its subgoals.
+
+  iex> import Ckini
+  iex> alias Ckini.Var
+  iex> x = Var.new()
+  iex> run(x, conda([eq(x, :olive), eq(x, :oil)]))
+  [:olive]
+
+  On the other hand, with conde all goals will be traversed.
+
+  iex> import Ckini
+  iex> alias Ckini.Var
+  iex> x = Var.new()
+  iex> run(x, conde([eq(x, :olive), eq(x, :oil)]))
+  [:olive, :oil]
+  """
+  def conda(goals) do
+    fn s ->
+      goals
+      |> Stream.from_list()
+      |> Stream.map(fn g -> to_goal(g).(s) end)
+      |> Stream.filter(fn s -> not Stream.empty?(s) end)
+      |> Stream.take(1)
+      |> Stream.concat()
     end
   end
 

@@ -123,12 +123,12 @@ defmodule Ckini.Stream do
     cons(f.(x), fn -> map(xs.(), f) end)
   end
 
-  @spec take(t(a) | (() -> t(a)), non_neg_integer()) :: [a]
-  def take(_s, 0), do: []
-  def take(nil, _n), do: []
+  @spec take(t(a) | (() -> t(a)), non_neg_integer()) :: t(a)
+  def take(_s, 0), do: nil
+  def take(nil, _n), do: nil
 
   def take(%{car: x, cdr: xs}, n) do
-    [x | take(xs, n - 1)]
+    cons(x, fn -> take(xs, n - 1) end)
   end
 
   def take(s, n) when is_function(s, 0), do: take(s.(), n)
@@ -138,6 +138,19 @@ defmodule Ckini.Stream do
 
   def from_list([]), do: nil
   def from_list([x | xs]), do: cons(x, fn -> from_list(xs) end)
+
+  @spec filter(t(a), (a -> boolean())) :: t(a)
+  def filter(nil, _pred), do: nil
+
+  def filter(%{car: x, cdr: xs}, pred) do
+    if pred.(x),
+      do: cons(x, fn -> filter(xs.(), pred) end),
+      else: filter(xs.(), pred)
+  end
+
+  @spec empty?(t()) :: boolean()
+  def empty?(nil), do: true
+  def empty?(%{car: _, cdr: _}), do: false
 
   @spec cached(t(a), (() -> t(a))) :: t(a)
   defp cached(nil, f), do: f.()
