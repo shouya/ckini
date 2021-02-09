@@ -56,6 +56,38 @@ defmodule CkiniTest do
     ])
   end
 
+  @tag timeout: 1000
+  test "appendo" do
+    x = Var.new(:x)
+    y = Var.new(:y)
+
+    assert run({x, y}, appendo(x, y, [1, 2, 3, 4])) == [
+             {[], [1, 2, 3, 4]},
+             {[1], [2, 3, 4]},
+             {[1, 2], [3, 4]},
+             {[1, 2, 3], [4]},
+             {[1, 2, 3, 4], []}
+           ]
+  end
+
+  def appendo(l, s, out) do
+    conde([
+      [eq(l, []), eq(s, out)],
+      fn ->
+        a = Var.new(:a)
+        d = Var.new(:d)
+
+        [
+          eq([a | d], l),
+          fn ->
+            res = Var.new(:res)
+            [eq([a | res], out), appendo(d, s, res)]
+          end
+        ]
+      end
+    ])
+  end
+
   test "condi and conde" do
     teacupo = fn v ->
       conde([eq(v, :tea), eq(v, :cup)])

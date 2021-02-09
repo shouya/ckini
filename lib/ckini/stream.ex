@@ -78,7 +78,7 @@ defmodule Ckini.Stream do
   def interleave(%{car: x, cdr: xs}) do
     case x do
       nil -> interleave(xs.())
-      %{car: y, cdr: ys} -> cons(y, fn -> interleave(snoc(xs.(), ys.())) end)
+      %{car: y, cdr: ys} -> cons(y, fn -> interleave(snoc(xs, ys.())) end)
     end
   end
 
@@ -86,11 +86,12 @@ defmodule Ckini.Stream do
   def rotate1(nil), do: nil
   def rotate1(%{car: x, cdr: xs}), do: snoc(xs, x)
 
-  @spec snoc(t(a), a) :: t(a)
-  def snoc(nil, v), do: singleton(v)
-
-  def snoc(%{car: x, cdr: xs}, v) do
-    cons(x, fn -> snoc(xs.(), v) end)
+  @spec snoc((() -> t(a)), a) :: t(a)
+  def snoc(f, v) do
+    case f.() do
+      nil -> singleton(v)
+      %{car: x, cdr: xs} -> cons(x, fn -> snoc(xs, v) end)
+    end
   end
 
   # the input stream needs to be of element type Subst.t()
@@ -122,13 +123,15 @@ defmodule Ckini.Stream do
     cons(f.(x), fn -> map(xs.(), f) end)
   end
 
-  @spec take(t(a), non_neg_integer()) :: [a]
+  @spec take(t(a) | (() -> t(a)), non_neg_integer()) :: [a]
   def take(_s, 0), do: []
   def take(nil, _n), do: []
 
   def take(%{car: x, cdr: xs}, n) do
-    [x | take(xs.(), n - 1)]
+    [x | take(xs, n - 1)]
   end
+
+  def take(s, n) when is_function(s, 0), do: take(s.(), n)
 
   def to_list(nil), do: []
   def to_list(%{car: x, cdr: xs}), do: [x | to_list(xs.())]

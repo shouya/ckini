@@ -53,7 +53,7 @@ defmodule Ckini do
   defp unify_list([a | as], [b | bs], s) do
     case unify(a, b, s) do
       :fail -> :fail
-      new_s -> unify_list(as, bs, new_s)
+      new_s -> unify(as, bs, new_s)
     end
   end
 
@@ -82,7 +82,11 @@ defmodule Ckini do
 
   def all(goals) do
     fn s ->
-      goals = Enum.map(goals, &to_goal(&1))
+      goals =
+        goals
+        |> Stream.from_list()
+        |> Stream.map(fn g -> to_goal(g) end)
+
       Stream.bind_goals(Stream.singleton(s), goals)
     end
   end

@@ -21,9 +21,9 @@ defmodule Ckini.Term do
   def var?(%Var{}), do: true
   def var?(_), do: false
 
-  def list?(t) do
-    is_list(t)
-  end
+  def list?([]), do: true
+  def list?([_ | _]), do: true
+  def list?(_), do: false
 
   def reify([], _subs), do: []
 

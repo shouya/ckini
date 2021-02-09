@@ -5,6 +5,7 @@ defmodule Ckini.Subst do
   """
 
   alias Ckini.{Var, Term}
+  require Term
 
   @type assoc :: {Var.t(), Term.t()}
   @type t :: [assoc()]
@@ -19,17 +20,15 @@ defmodule Ckini.Subst do
     [{var, val} | sub]
   end
 
-  def walk(subst, var) do
+  def walk(subst, %Var{} = var) do
     case List.keyfind(subst, var, 0) do
-      nil ->
-        var
-
-      {_, t} ->
-        if Term.basic?(t) or Term.list?(t),
-          do: t,
-          else: walk(remove(subst, var), t)
+      nil -> var
+      {_, %Var{} = t} -> walk(remove(subst, var), t)
+      {_, t} -> t
     end
   end
+
+  def walk(_subst, t), do: t
 
   def deep_walk(sub, var) do
     case walk(sub, var) do
