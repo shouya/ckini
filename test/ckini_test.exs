@@ -68,6 +68,9 @@ defmodule CkiniTest do
              {[1, 2, 3], [4]},
              {[1, 2, 3, 4], []}
            ]
+
+    assert run({x, y}, appendo2(x, y, [1, 2, 3, 4])) ==
+             run({x, y}, appendo(x, y, [1, 2, 3, 4]))
   end
 
   def appendo(l, s, out) do
@@ -85,6 +88,17 @@ defmodule CkiniTest do
           end
         ]
       end
+    ])
+  end
+
+  def appendo2(l, s, out) do
+    a = Var.new(:a)
+    d = Var.new(:d)
+    res = Var.new(:res)
+
+    conde([
+      [eq(l, []), eq(s, out)],
+      [eq([a | res], out), eq([a | d], l), appendo(d, s, res)]
     ])
   end
 
