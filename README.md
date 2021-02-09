@@ -34,7 +34,7 @@ A MiniKanren-like logic programming framework in Elixir.
 ```
 
 
-API available: `run/2`, `run/3`, `===`, `conde`, `condi`, `all`. (`fresh` is not required with this syntax).
+API available: `run/2`, `run/3`, `===`, `conde`, `condi`, `all`, `project`. (Please note `fresh` is not required with this syntax).
 
 Check out the https://github.com/shouya/ckini/blob/master/test/ckini_test.exs for more usage examples.
 
