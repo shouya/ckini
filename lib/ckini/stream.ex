@@ -8,11 +8,15 @@ defmodule Ckini.Stream do
 
   defstruct [:car, :cdr]
 
-  @type t :: nil | %__MODULE__{}
+  @type t(v) :: nil | %__MODULE__{car: v, cdr: (() -> t(v))}
+  @type t :: t(any())
   @type goal :: Ckini.goal()
+  # type var
+  @typep a :: any()
+  @typep b :: any()
 
-  @spec new(any(), (() -> t())) :: t()
-  def new(car, cdr) when is_function(cdr, 0) do
+  @spec cons(a(), (() -> t(a))) :: t(a)
+  def cons(car, cdr) when is_function(cdr, 0) do
     %__MODULE__{car: car, cdr: cdr}
   end
 
@@ -21,9 +25,9 @@ defmodule Ckini.Stream do
     nil
   end
 
-  @spec singleton(any()) :: t()
+  @spec singleton(a) :: t(a)
   def singleton(s) do
-    new(s, fn -> nil end)
+    cons(s, fn -> nil end)
   end
 
   @doc """
@@ -42,13 +46,13 @@ defmodule Ckini.Stream do
   ...> |> Stream.to_list()
   [0, 1, 2, 3, 4, 5, 6, 7, 8]
   """
-  @spec concat(t()) :: t()
+  @spec concat(t(t(a))) :: t(a)
   def concat(nil), do: nil
 
   def concat(%{car: x, cdr: xs}) do
     case x do
       nil -> concat(xs.())
-      %{car: y, cdr: ys} -> new(y, fn -> concat(new(ys.(), xs)) end)
+      %{car: y, cdr: ys} -> cons(y, fn -> concat(cons(ys.(), xs)) end)
     end
   end
 
@@ -68,32 +72,29 @@ defmodule Ckini.Stream do
   ...> |> Stream.to_list()
   [0, 1, 2, 3, 4, 5, 6, 7, 8]
   """
-  @spec interleave(t()) :: t()
+  @spec interleave(t(t(a))) :: t(a)
   def interleave(nil), do: nil
 
   def interleave(%{car: x, cdr: xs}) do
     case x do
       nil -> interleave(xs.())
-      %{car: y, cdr: ys} -> new(y, fn -> interleave(snoc(xs.(), ys.())) end)
+      %{car: y, cdr: ys} -> cons(y, fn -> interleave(snoc(xs.(), ys.())) end)
     end
   end
 
+  @spec rotate1(t(a)) :: t(a)
   def rotate1(nil), do: nil
   def rotate1(%{car: x, cdr: xs}), do: snoc(xs, x)
 
+  @spec snoc(t(a), a) :: t(a)
   def snoc(nil, v), do: singleton(v)
 
   def snoc(%{car: x, cdr: xs}, v) do
-    new(x, fn -> snoc(xs.(), v) end)
-  end
-
-  @spec insert(t(), t()) :: t()
-  def insert(stream, v) do
-    new(v, fn -> stream end)
+    cons(x, fn -> snoc(xs.(), v) end)
   end
 
   # the input stream needs to be of element type Subst.t()
-  @spec bind_goal(t(), goal()) :: t()
+  @spec bind_goal(t(Subst.t()), goal()) :: t(Subst.t())
   def bind_goal(nil, _g), do: nil
 
   def bind_goal(%{car: x, cdr: xs}, g) do
@@ -102,28 +103,26 @@ defmodule Ckini.Stream do
         bind_goal(xs.(), g)
 
       %{car: v, cdr: vs} ->
-        new(v, fn -> cached(vs.(), fn -> bind_goal(xs.(), g) end) end)
+        cons(v, fn -> cached(vs.(), fn -> bind_goal(xs.(), g) end) end)
     end
   end
 
-  @spec bind_goals(t(), [goal()]) :: t()
+  @spec bind_goals(t(Subst.t()), t(goal)) :: t(Subst.t())
   def bind_goals(nil, _gs), do: nil
-  def bind_goals(subs, []), do: subs
+  def bind_goals(t, nil), do: t
 
-  def bind_goals(subs, [g | gs]) do
-    subs
-    |> bind_goal(g)
-    |> bind_goals(gs)
+  def bind_goals(t, %{car: g, cdr: gs}) do
+    t |> bind_goal(g) |> bind_goals(gs.())
   end
 
-  @spec map(t(), (any() -> any())) :: t()
+  @spec map(t(a), (a -> b)) :: t(b)
   def map(nil, _f), do: nil
 
   def map(%{car: x, cdr: xs}, f) do
-    new(f.(x), fn -> map(xs.(), f) end)
+    cons(f.(x), fn -> map(xs.(), f) end)
   end
 
-  @spec take(t(), non_neg_integer()) :: [any()]
+  @spec take(t(a), non_neg_integer()) :: [a]
   def take(_s, 0), do: []
   def take(nil, _n), do: []
 
@@ -135,11 +134,11 @@ defmodule Ckini.Stream do
   def to_list(%{car: x, cdr: xs}), do: [x | to_list(xs.())]
 
   def from_list([]), do: nil
-  def from_list([x | xs]), do: new(x, fn -> from_list(xs) end)
+  def from_list([x | xs]), do: cons(x, fn -> from_list(xs) end)
 
-  @spec cached(t(), (() -> t())) :: t()
+  @spec cached(t(a), (() -> t(a))) :: t(a)
   defp cached(nil, f), do: f.()
 
   defp cached(%{car: x, cdr: xs}, f),
-    do: new(x, fn -> cached(xs.(), f) end)
+    do: cons(x, fn -> cached(xs.(), f) end)
 end
