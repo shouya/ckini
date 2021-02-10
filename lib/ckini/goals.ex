@@ -3,8 +3,48 @@ defmodule Ckini.Goals do
   This module defines generic goals and combinators like anyo.
   """
 
-  alias Ckini.{Subst, Var}
+  alias Ckini.{Stream, Subst, Var}
   import Ckini
+
+  @type goal :: Ckini.goal()
+
+  @doc """
+  succ is a goal that always succeeds.
+
+  iex> use Ckini
+  iex> x = Var.new()
+  iex> run(x, [succ(), eq(x, 1)])
+  [1]
+  """
+  @spec succ :: goal()
+  def succ do
+    fn s -> Stream.singleton(s) end
+  end
+
+  @spec fail :: goal()
+  def fail do
+    fn _ -> Stream.empty() end
+  end
+
+  @spec eq(Term.t(), Term.t()) :: goal()
+  def eq(v, w) do
+    fn s ->
+      case unify(v, w, s) do
+        :fail -> Stream.empty()
+        new_s -> Stream.singleton(new_s)
+      end
+    end
+  end
+
+  @spec neq(Term.t(), Term.t()) :: goal()
+  def neq(v, w) do
+    fn s ->
+      case unify(v, w, s) do
+        :fail -> Stream.singleton(s)
+        _s -> Stream.empty()
+      end
+    end
+  end
 
   @doc """
   Anyo runs the goal for indefinitely number of times.

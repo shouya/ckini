@@ -4,12 +4,10 @@ defmodule CkiniTest do
   doctest Ckini.Stream, import: true
   doctest Ckini.Goals, import: true
 
-  import Ckini
-  alias Ckini.Var
+  use Ckini
 
   defmodule Demo do
-    import Ckini
-    alias Ckini.Var
+    use Ckini
 
     def readme_demo do
       x = Var.new()
