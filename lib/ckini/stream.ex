@@ -121,15 +121,17 @@ defmodule Ckini.Stream do
     cons(f.(x), fn -> map(xs.(), f) end)
   end
 
-  @spec take(t(a) | (() -> t(a)), non_neg_integer()) :: t(a)
+  @spec take(t(a), non_neg_integer()) :: t(a)
   def take(_s, 0), do: nil
   def take(nil, _n), do: nil
 
-  def take(%{car: x, cdr: xs}, n) do
-    cons(x, fn -> take(xs, n - 1) end)
-  end
+  # this clause is required so it doesn't try to resolve cdr if we
+  # already have the one element we want.
+  def take(%{car: x, cdr: _xs}, 1), do: singleton(x)
 
-  def take(s, n) when is_function(s, 0), do: take(s.(), n)
+  def take(%{car: x, cdr: xs}, n) do
+    cons(x, fn -> take(xs.(), n - 1) end)
+  end
 
   def to_list(nil), do: []
   def to_list(%{car: x, cdr: xs}), do: [x | to_list(xs.())]

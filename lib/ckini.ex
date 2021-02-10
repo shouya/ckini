@@ -76,18 +76,20 @@ defmodule Ckini do
     |> Stream.to_list()
   end
 
-  def to_goal(g) when is_function(g, 1), do: g
-  def to_goal(f) when is_function(f, 0), do: to_goal(f.())
-  def to_goal(gs) when is_list(gs), do: all(gs)
-  def to_goal(_), do: raise("Invalid goal!")
+  defp to_goal(g) when is_function(g, 1), do: g
+  defp to_goal(f) when is_function(f, 0), do: to_goal(f.())
+  defp to_goal(gs) when is_list(gs), do: all(gs)
+  defp to_goal(_), do: raise("Invalid goal!")
+
+  defp to_goal_stream(gs) do
+    gs
+    |> Stream.from_list()
+    |> Stream.map(fn g -> to_goal(g) end)
+  end
 
   def all(goals) do
     fn s ->
-      goals =
-        goals
-        |> Stream.from_list()
-        |> Stream.map(fn g -> to_goal(g) end)
-
+      goals = to_goal_stream(goals)
       Stream.bind_goals(Stream.singleton(s), goals)
     end
   end
@@ -95,8 +97,8 @@ defmodule Ckini do
   def conde(goals) do
     fn s ->
       goals
-      |> Stream.from_list()
-      |> Stream.map(fn g -> to_goal(g).(s) end)
+      |> to_goal_stream()
+      |> Stream.map(fn g -> g.(s) end)
       |> Stream.concat()
     end
   end
@@ -104,17 +106,18 @@ defmodule Ckini do
   def condi(goals) do
     fn s ->
       goals
-      |> Stream.from_list()
-      |> Stream.map(fn g -> to_goal(g).(s) end)
+      |> to_goal_stream()
+      |> Stream.map(fn g -> g.(s) end)
       |> Stream.interleave()
     end
   end
 
   @doc """
-  conda returns the first successful match of its subgoals.
+  conda is similar to conde but returns the first successful match of
+  its subgoals.
 
   iex> x = Ckini.Var.new()
-  iex> run(x, conda([eq(x, :olive), eq(x, :oil)]))
+  iex> run(x, conda([[eq(x, :olive)], [eq(x, :oil)]]))
   [:olive]
 
   On the other hand, with conde all goals will be traversed.
@@ -122,15 +125,38 @@ defmodule Ckini do
   iex> x = Ckini.Var.new()
   iex> run(x, conde([eq(x, :olive), eq(x, :oil)]))
   [:olive, :oil]
+
+  Note that conda perform "soft-cut" operation on its subgoals. In the
+  following example, since x already successfully unifies with :olive,
+  it will act as if there is no eq(x, :oil) branch.
+
+  iex> x = Ckini.Var.new()
+  iex> run(x, conda([[eq(x, :olive), eq(false, true)], [eq(x, :oil)]]))
+  []
   """
   def conda(goals) do
     fn s ->
-      goals
-      |> Stream.from_list()
-      |> Stream.map(fn g -> to_goal(g).(s) end)
-      |> Stream.filter(fn s -> not Stream.empty?(s) end)
-      |> Stream.take(1)
-      |> Stream.concat()
+      {subs, subgoals} =
+        Enum.find_value(goals, fn [subgoal | subgoals] ->
+          subs = to_goal(subgoal).(s)
+          if not Stream.empty?(subs), do: {subs, subgoals}
+        end)
+
+      subgoals = to_goal_stream(subgoals)
+      Stream.bind_goals(subs, subgoals)
+    end
+  end
+
+  def condu(goals) do
+    fn s ->
+      {subs, subgoals} =
+        Enum.find_value(goals, fn [subgoal | subgoals] ->
+          subs = to_goal(subgoal).(s)
+          if not Stream.empty?(subs), do: {subs, subgoals}
+        end)
+
+      subgoals = to_goal_stream(subgoals)
+      Stream.bind_goals(Stream.take(subs, 1), subgoals)
     end
   end
 
