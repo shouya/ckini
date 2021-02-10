@@ -47,3 +47,8 @@ More documentation in progress...
 1. Ckini implementation doesn't use any Macro. So the `fresh` construct is not needed.
 2. Ckini allows multiple values to be queried in `run`, as opposed to one
 3. Ckini's `walk` implementation has been designed to avoid circular reference
+
+## References
+
+- The Reasoned Schemer by Daniel P. Friedman, et al.
+- Relational Programming in MiniKanren by William E. Byrd
