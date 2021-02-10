@@ -33,17 +33,16 @@ defmodule Ckini.Stream do
   @doc """
   Concat a stream of stream.
 
-  iex> alias Ckini.Stream
-  ...> [
+  iex> [
   ...>   [0, 1, 2, 3],
   ...>   [4, 5, 6],
   ...>   [7],
   ...>   [8]
   ...> ]
-  ...> |> Enum.map(&Stream.from_list/1)
-  ...> |> Stream.from_list()
-  ...> |> Stream.concat()
-  ...> |> Stream.to_list()
+  ...> |> Enum.map(&from_list/1)
+  ...> |> from_list()
+  ...> |> concat()
+  ...> |> to_list()
   [0, 1, 2, 3, 4, 5, 6, 7, 8]
   """
   @spec concat(t(t(a))) :: t(a)
@@ -59,17 +58,16 @@ defmodule Ckini.Stream do
   @doc """
   Like concat/1, but interleave a stream of stream instead.
 
-  iex> alias Ckini.Stream
-  ...> [
+  iex> [
   ...>   [0, 4, 6, 8],
   ...>   [1, 5, 7],
   ...>   [2],
   ...>   [3]
   ...> ]
-  ...> |> Enum.map(&Stream.from_list/1)
-  ...> |> Stream.from_list()
-  ...> |> Stream.interleave()
-  ...> |> Stream.to_list()
+  ...> |> Enum.map(&from_list/1)
+  ...> |> from_list()
+  ...> |> interleave()
+  ...> |> to_list()
   [0, 1, 2, 3, 4, 5, 6, 7, 8]
   """
   @spec interleave(t(t(a))) :: t(a)

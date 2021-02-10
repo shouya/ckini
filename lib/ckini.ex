@@ -113,17 +113,13 @@ defmodule Ckini do
   @doc """
   conda returns the first successful match of its subgoals.
 
-  iex> import Ckini
-  iex> alias Ckini.Var
-  iex> x = Var.new()
+  iex> x = Ckini.Var.new()
   iex> run(x, conda([eq(x, :olive), eq(x, :oil)]))
   [:olive]
 
   On the other hand, with conde all goals will be traversed.
 
-  iex> import Ckini
-  iex> alias Ckini.Var
-  iex> x = Var.new()
+  iex> x = Ckini.Var.new()
   iex> run(x, conde([eq(x, :olive), eq(x, :oil)]))
   [:olive, :oil]
   """

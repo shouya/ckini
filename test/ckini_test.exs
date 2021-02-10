@@ -1,10 +1,10 @@
 defmodule CkiniTest do
   use ExUnit.Case
-  doctest Ckini.Stream
-  doctest Ckini
+  doctest Ckini.Stream, import: true
+  doctest Ckini, import: true
 
   import Ckini
-  alias Ckini.{Var, Stream}
+  alias Ckini.Var
 
   defmodule Demo do
     import Ckini
@@ -125,6 +125,6 @@ defmodule CkiniTest do
              project(q, fn q ->
                eq(not (not q), q)
              end)
-           ])
+           ]) == [false]
   end
 end
