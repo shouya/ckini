@@ -147,6 +147,16 @@ defmodule Ckini do
     end
   end
 
+  @doc """
+  condu is almost the same as conda, except that it only succeed once.
+
+  iex> x = Ckini.Var.new()
+  iex> alwayso = anyo(succ())
+  iex> run(x, [condu([[eq(1, 2)], [alwayso]]), eq(x, 3)])
+  [3]
+
+  Above example will run forever if we replace condu with conda.
+  """
   def condu(goals) do
     fn s ->
       {subs, subgoals} =
@@ -164,5 +174,9 @@ defmodule Ckini do
     fn s ->
       to_goal(f.(Subst.deep_walk(s, var))).(s)
     end
+  end
+
+  def anyo(g) do
+    conde([g, fn -> anyo(g) end])
   end
 end
