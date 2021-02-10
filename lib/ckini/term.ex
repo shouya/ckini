@@ -5,13 +5,13 @@ defmodule Ckini.Term do
 
   @type t :: atom() | binary() | integer() | Var.t() | [t()]
 
-  defguard basic?(t)
+  defguard is_basic(t)
            when is_atom(t) or is_binary(t) or is_integer(t)
 
   def eq?(t1, t2) do
     cond do
       var?(t1) and var?(t2) -> Var.eq?(t1, t2)
-      basic?(t1) and basic?(t2) -> t1 == t2
+      is_basic(t1) and is_basic(t2) -> t1 == t2
       list?(t1) and list?(t2) -> t1 == t2
       true -> false
     end

@@ -21,27 +21,33 @@ defmodule Ckini.Goals do
     fn s -> Stream.singleton(s) end
   end
 
+  @doc """
+  succ is a goal that always succeeds.
+
+  iex> use Ckini
+  iex> x = Var.new()
+  iex> run(x, conde([[fail(), eq(x, 1)], [succ(), eq(x, 2)]]))
+  [2]
+  """
   @spec fail :: goal()
   def fail do
     fn _ -> Stream.empty() end
   end
 
+  @doc """
+  eq is the same as the `===` operator in TRS and other miniKanren literature.
+
+  iex> use Ckini
+  iex> x = Var.new()
+  iex> run(x, eq(3, x))
+  [3]
+  """
   @spec eq(Term.t(), Term.t()) :: goal()
   def eq(v, w) do
     fn s ->
       case unify(v, w, s) do
         :fail -> Stream.empty()
         new_s -> Stream.singleton(new_s)
-      end
-    end
-  end
-
-  @spec neq(Term.t(), Term.t()) :: goal()
-  def neq(v, w) do
-    fn s ->
-      case unify(v, w, s) do
-        :fail -> Stream.singleton(s)
-        _s -> Stream.empty()
       end
     end
   end
