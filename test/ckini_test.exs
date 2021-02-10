@@ -1,7 +1,8 @@
 defmodule CkiniTest do
   use ExUnit.Case
-  doctest Ckini.Stream, import: true
   doctest Ckini, import: true
+  doctest Ckini.Stream, import: true
+  doctest Ckini.Goals, import: true
 
   import Ckini
   alias Ckini.Var
