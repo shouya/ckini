@@ -5,6 +5,9 @@ defmodule Ckini.Term do
 
   @type t :: atom() | binary() | integer() | Var.t() | [t()]
 
+  defguard basic?(t)
+           when is_atom(t) or is_binary(t) or is_integer(t)
+
   def eq?(t1, t2) do
     cond do
       var?(t1) and var?(t2) -> Var.eq?(t1, t2)
@@ -14,10 +17,6 @@ defmodule Ckini.Term do
     end
   end
 
-  def basic?(t) do
-    is_atom(t) or is_binary(t) or is_integer(t)
-  end
-
   def var?(%Var{}), do: true
   def var?(_), do: false
 
@@ -25,16 +24,10 @@ defmodule Ckini.Term do
   def list?([_ | _]), do: true
   def list?(_), do: false
 
-  def reify([], _subs), do: []
-
-  def reify([t | ts], subs) do
-    [reify(t, subs) | reify(ts, subs)]
-  end
-
   def reify(ts, subs) when is_tuple(ts) do
     ts
     |> Tuple.to_list()
-    |> Enum.map(&reify(&1, subs))
+    |> reify(subs)
     |> List.to_tuple()
   end
 

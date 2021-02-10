@@ -23,12 +23,15 @@ defmodule Ckini.Var do
   def eq?(%__MODULE__{id: v1}, %__MODULE__{id: v2}) do
     v1 == v2
   end
+
+  def clone(%__MODULE__{sym: sym}), do: new(sym)
 end
 
 defimpl Inspect, for: Ckini.Var do
   def inspect(%{sym: nil, id: id}, _opts) do
     "var_#{id}"
   end
+
   def inspect(%{sym: sym, id: id}, _opts) do
     "#{sym}<#{id}>"
   end
