@@ -20,6 +20,10 @@ defmodule Ckini.Var do
     }
   end
 
+  def new_many(n, sym \\ nil)
+  def new_many(0, _sym), do: []
+  def new_many(n, sym), do: [new(sym) | new_many(n - 1, sym)]
+
   def eq?(%__MODULE__{id: v1}, %__MODULE__{id: v2}) do
     v1 == v2
   end
