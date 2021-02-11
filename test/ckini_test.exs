@@ -98,7 +98,7 @@ defmodule CkiniTest do
 
     conde([
       [eq(l, []), eq(s, out)],
-      [eq([a | res], out), eq([a | d], l), appendo(d, s, res)]
+      [eq([a | res], out), eq([a | d], l), fn -> appendo2(d, s, res) end]
     ])
   end
 

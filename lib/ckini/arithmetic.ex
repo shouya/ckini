@@ -81,7 +81,7 @@ defmodule Ckini.Arithmetic do
   end
 
   # The operator >1o
-  defp gt1o(n) do
+  def gt1o(n) do
     [a, b, d] = Var.new_many(3)
     eq([a, b | d], n)
   end
@@ -289,6 +289,119 @@ defmodule Ckini.Arithmetic do
       [eq(n, []), poso(m)],
       [eq(n, [1]), gt1o(m)],
       [eq([a | x], n), eq([b | y], m), poso(x), poso(y), recur.(x, y)]
+    ])
+  end
+
+  defp length_leo(n, m) do
+    conde([fn -> length_lto(n, m) end, fn -> length_eqo(n, m) end])
+  end
+
+  @doc """
+  iex> use Ckini
+  iex> [b, q, r] = Var.new_many(3)
+  iex> run(9, {b, q, r}, [logo(from_number(68), b, q, r), gt1o(q)])
+  []
+  """
+  def logo(n, b, q, r) do
+    [a, bb, dd, add, ddd, bw1, bw, nw, nw1, ql1, ql] = Var.new_many(11)
+    [qq, bwq1, bql, qh, s, qdh, qd, bqd, bq1, bq] = Var.new_many(10)
+
+    conde([
+      fn -> [eq([1], n), eq([], q), eq([], r), poso(b)] end,
+      fn -> [eq([], q), lto(n, b), pluso(r, [1], n)] end,
+      fn -> [eq([1], q), gt1o(b), length_eqo(n, b), pluso(r, b, n)] end,
+      fn -> [eq([1], b), poso(q), pluso(r, [1], n)] end,
+      fn -> [eq([], b), poso(q), eq(r, n)] end,
+      fn ->
+        [
+          eq([a, bb | dd], n),
+          eq([0, 1], b),
+          poso(dd),
+          fn -> exp2o(n, [], q) end,
+          fn -> splito(n, dd, r, s) end
+        ]
+      end,
+      fn ->
+        [
+          fn -> conde([eq([1, 1], b), eq([a, bb, add | ddd], b)]) end,
+          fn -> length_lto(b, n) end,
+          fn -> exp2o(b, [], bw1) end,
+          fn -> pluso(bw1, [1], bw) end,
+          fn -> length_lto(q, n) end,
+          fn -> pluso(q, [1], qq) end,
+          fn -> mulo(bw, qq, bwq1) end,
+          fn -> lto(nw1, bwq1) end,
+          fn -> exp2o(n, [], nw1) end,
+          fn -> pluso(nw1, [1], nw) end,
+          fn -> divo(nw, bw, ql1, s) end,
+          fn -> pluso(ql, [1], ql1) end,
+          fn -> length_leo(ql, q) end,
+          fn -> repeated_mulo(b, ql, bql) end,
+          fn -> divo(nw, bw1, qh, s) end,
+          fn -> pluso(ql, qdh, qh) end,
+          fn -> pluso(ql, qd, q) end,
+          fn -> leo(qd, qdh) end,
+          fn -> repeated_mulo(b, qd, bqd) end,
+          fn -> mulo(bql, bqd, bq) end,
+          fn -> mulo(b, bq, bq1) end,
+          fn -> pluso(bq, r, n) end,
+          fn -> lto(n, bq1) end
+        ]
+      end
+    ])
+  end
+
+  defp exp2o(n, b, q) do
+    [s, bb, nh, qq] = Var.new_many(4)
+
+    conde([
+      fn -> [eq([1], n), eq([], q)] end,
+      fn -> [eq([1], q), gt1o(n), splito(n, b, s, [1])] end,
+      fn ->
+        [
+          eq([0 | qq], q),
+          poso(qq),
+          length_lto(b, n),
+          appendo(b, [1 | b], bb),
+          fn -> exp2o(n, bb, qq) end
+        ]
+      end,
+      fn ->
+        [
+          eq([1 | qq], q),
+          poso(qq),
+          poso(nh),
+          splito(n, b, s, nh),
+          appendo(b, [1 | b], bb),
+          fn -> exp2o(nh, bb, qq) end
+        ]
+      end
+    ])
+  end
+
+  defp repeated_mulo(n, q, nq) do
+    conde([
+      fn -> [eq([], q), eq([1], nq), poso(n)] end,
+      fn -> [eq([1], q), eq(n, nq)] end,
+      fn ->
+        [qq, nq1] = Var.new_many(2)
+
+        [
+          gt1o(q),
+          pluso(qq, [1], q),
+          fn -> repeated_mulo(n, qq, nq1) end,
+          mulo(nq1, n, nq)
+        ]
+      end
+    ])
+  end
+
+  def appendo(l, s, out) do
+    [a, d, res] = Var.new_many(3)
+
+    conde([
+      [eq(l, []), eq(s, out)],
+      [eq([a | res], out), eq([a | d], l), fn -> appendo(d, s, res) end]
     ])
   end
 end
