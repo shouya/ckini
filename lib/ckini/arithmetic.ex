@@ -297,10 +297,9 @@ defmodule Ckini.Arithmetic do
   end
 
   @doc """
-  iex> use Ckini
-  iex> [b, q, r] = Var.new_many(3)
-  iex> run(9, {b, q, r}, [logo(from_number(68), b, q, r), gt1o(q)])
-  []
+  This function doesn't spit out complete result yet. More investigation needed.
+
+  See https://github.com/shouya/ckini/issues/1
   """
   def logo(n, b, q, r) do
     [a, bb, dd, add, ddd, bw1, bw, nw, nw1, ql1, ql] = Var.new_many(11)
