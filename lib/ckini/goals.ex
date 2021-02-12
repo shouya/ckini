@@ -41,6 +41,8 @@ defmodule Ckini.Goals do
   iex> x = Var.new()
   iex> run(x, eq(3, x))
   [3]
+  iex> run(x, eq([x], x))
+  []
   """
   @spec eq(Term.t(), Term.t()) :: goal()
   def eq(v, w) do
@@ -52,6 +54,25 @@ defmodule Ckini.Goals do
     end
   end
 
+  @doc """
+  The `=/=` operator.
+
+  iex> use Ckini
+  iex> x = Var.new()
+  iex> run(x, [neq(3, x), eq(x, 3)])
+  []
+  iex> run(x, [eq(3, x), neq(x, 3)])
+  []
+  iex> run(x, [eq(4, x), neq(x, 3)])
+  [4]
+  iex> [y,z] = Var.new_many(2)
+  iex> run(x, [neq(x, [y,z]), eq(y, 10)])
+  [{:_0, {:never, [[{:_0, [:_1, :_2]}]]}}]
+  iex> run(x, [neq(x, [y,z]), neq(x, :hello)])
+  [{:_0, {:never, [[{:_0, :hello}], [{:_0, [:_1, :_2]}]]}}]
+  iex> run(x, [neq(x, [y,z]), neq(x, :hello), eq(x, [1,2,3])])
+  [[1,2,3]]
+  """
   def neq(v, w) do
     fn c ->
       case Context.disunify(c, v, w) do

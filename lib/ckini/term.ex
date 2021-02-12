@@ -1,7 +1,7 @@
 defmodule Ckini.Term do
   @moduledoc false
 
-  alias Ckini.{Var, Subst}
+  alias Ckini.{Var, Subst, Context}
 
   @type t :: atom() | binary() | integer() | Var.t() | [t()]
 
@@ -24,15 +24,36 @@ defmodule Ckini.Term do
   def list?([_ | _]), do: true
   def list?(_), do: false
 
+  def all_vars(t) when is_basic(t), do: []
+  def all_vars(%Var{} = v), do: [v]
+  def all_vars([]), do: []
+  def all_vars([x | xs]), do: all_vars(x) ++ all_vars(xs)
+
   def reify(ts, ctx) when is_tuple(ts) do
     ts
     |> Tuple.to_list()
     |> reify(ctx)
-    |> List.to_tuple()
+    |> case do
+      {xs, c} -> {List.to_tuple(xs), c}
+      xs -> List.to_tuple(xs)
+    end
   end
 
   def reify(t, ctx) do
     t = Subst.deep_walk(ctx.subst, t)
-    Subst.deep_walk(Subst.reify(t), t)
+    cs = Context.purify(ctx, t)
+
+    subst =
+      Subst.new()
+      |> Subst.reify(t)
+      |> Subst.reify_substs(cs)
+
+    term = Subst.deep_walk(subst, t)
+    constraints = Context.reify_constraints(subst, cs)
+
+    case constraints do
+      [] -> term
+      c -> {term, c}
+    end
   end
 end

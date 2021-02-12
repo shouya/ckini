@@ -3,6 +3,8 @@ defmodule Ckini.Context do
 
   alias Ckini.{Subst, Term}
 
+  require Term
+
   defstruct subst: [], constraints: []
 
   @type t :: %__MODULE__{
@@ -17,14 +19,9 @@ defmodule Ckini.Context do
   @spec unify(t(), Term.t(), Term.t()) :: nil | t()
   def unify(c, v, w) do
     case Subst.unify(c.subst, v, w) do
-      nil ->
-        nil
-
-      [] ->
-        verify(c)
-
-      extra_s ->
-        verify(%{c | subst: Subst.concat(extra_s, c.subst)})
+      nil -> nil
+      [] -> c
+      extra_s -> verify(%{c | subst: Subst.concat(extra_s, c.subst)})
     end
   end
 
@@ -49,5 +46,21 @@ defmodule Ckini.Context do
           new_ctx -> %{new_ctx | constraints: [new_c | new_ctx.constraints]}
         end
     end
+  end
+
+  def purify(%{constraints: cs}, t) do
+    vars = Term.all_vars(t)
+
+    cs
+    |> Enum.map(fn subst ->
+      Subst.filter_vars(subst, Subst.relevant_vars(subst, vars))
+    end)
+    |> Enum.reject(&match?([], &1))
+  end
+
+  def reify_constraints(_subst, []), do: []
+
+  def reify_constraints(subst, cs) do
+    {:never, Subst.deep_walk(subst, cs)}
   end
 end
