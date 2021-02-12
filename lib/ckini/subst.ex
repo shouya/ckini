@@ -8,7 +8,7 @@ defmodule Ckini.Subst do
   require Term
 
   @type assoc :: {Var.t(), Term.t()}
-  @type t :: [assoc()]
+  @type t :: [assoc]
 
   @spec new() :: t()
   def new() do
@@ -16,8 +16,68 @@ defmodule Ckini.Subst do
   end
 
   @spec insert(t(), Var.t(), Term.t()) :: t()
-  def insert(sub, var, val) do
-    [{var, val} | sub]
+  def insert(subs, var, val) do
+    [{var, val} | subs]
+  end
+
+  @spec singleton(Var.t(), Term.t()) :: t()
+  def singleton(var, val) do
+    [{var, val}]
+  end
+
+  @spec concat(t(), t()) :: t()
+  def concat(s1, s2) do
+    s1 ++ s2
+  end
+
+  @spec assocs(t()) :: [{Var.t(), Term.t()}]
+  def assocs(t), do: t
+
+  # returns only extra associations
+  @spec unify(t(), Term.t(), Term.t()) :: nil | t()
+  def unify(s, v, w) do
+    vv = walk(s, v)
+    ww = walk(s, w)
+
+    cond do
+      Term.eq?(vv, ww) -> []
+      Term.var?(vv) -> [{vv, ww}]
+      Term.var?(ww) -> [{ww, vv}]
+      Term.list?(vv) and Term.list?(ww) -> unify_list(s, vv, ww)
+      true -> nil
+    end
+  end
+
+  @spec unify_list([Term.t()], [Term.t()], t()) :: nil | t()
+  defp unify_list(_s, [], []), do: []
+
+  defp unify_list(s, [a | as], [b | bs]) do
+    case unify(s, a, b) do
+      nil ->
+        nil
+
+      ss ->
+        case unify(concat(ss, s), as, bs) do
+          nil -> nil
+          sss -> concat(ss, sss)
+        end
+    end
+  end
+
+  # list length incompatible
+  defp unify_list(_s, _, _), do: nil
+
+  @doc """
+  Verify a substitution against a base substitution.
+  """
+  @spec verify(t(), t()) :: nil | t()
+  def verify(_base, []), do: []
+
+  def verify(base, [{v, w} | sub]) do
+    case unify(v, w, base) do
+      nil -> nil
+      extra_sub -> concat(extra_sub, verify(concat(extra_sub, base), sub))
+    end
   end
 
   def walk(subst, %Var{} = var) do

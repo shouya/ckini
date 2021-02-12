@@ -1,7 +1,7 @@
 defmodule Ckini do
-  alias Ckini.{Subst, Stream, Term}
+  alias Ckini.{Subst, Stream, Term, Context}
 
-  @type goal :: (Subst.t() -> Stream.t())
+  @type goal :: (Context.t() -> Stream.t(Context.t()))
 
   defmacro __using__(_opts \\ []) do
     quote do
@@ -11,34 +11,8 @@ defmodule Ckini do
     end
   end
 
-  @spec unify(Term.t(), Term.t(), Subst.t()) :: :fail | Subst.t()
-  def unify(v, w, s) do
-    vv = Subst.walk(s, v)
-    ww = Subst.walk(s, w)
-
-    cond do
-      Term.eq?(vv, ww) -> s
-      Term.var?(vv) -> Subst.insert(s, vv, ww)
-      Term.var?(ww) -> Subst.insert(s, ww, vv)
-      Term.list?(vv) and Term.list?(ww) -> unify_list(vv, ww, s)
-      true -> :fail
-    end
-  end
-
-  @spec unify_list([Term.t()], [Term.t()], Subst.t()) :: :fail | Subst.t()
-  defp unify_list([], [], s), do: s
-
-  defp unify_list([a | as], [b | bs], s) do
-    case unify(a, b, s) do
-      :fail -> :fail
-      new_s -> unify(as, bs, new_s)
-    end
-  end
-
-  defp unify_list(_, _, _s), do: :fail
-
   def run(vars, goals) do
-    stream_of_subst = to_goal(goals).(Subst.new())
+    stream_of_subst = to_goal(goals).(Context.new())
 
     stream_of_subst
     |> Stream.map(fn subst -> Term.reify(vars, subst) end)
@@ -46,7 +20,7 @@ defmodule Ckini do
   end
 
   def run(n, vars, goals) when is_integer(n) and n >= 0 do
-    stream_of_subst = to_goal(goals).(Subst.new())
+    stream_of_subst = to_goal(goals).(Context.new())
 
     stream_of_subst
     |> Stream.map(fn subst -> Term.reify(vars, subst) end)
@@ -66,26 +40,26 @@ defmodule Ckini do
   end
 
   def all(goals) do
-    fn s ->
+    fn ctx ->
       goals = to_goal_stream(goals)
-      Stream.bind_goals(Stream.singleton(s), goals)
+      Stream.bind_goals(Stream.singleton(ctx), goals)
     end
   end
 
   def conde(goals) do
-    fn s ->
+    fn ctx ->
       goals
       |> to_goal_stream()
-      |> Stream.map(fn g -> g.(s) end)
+      |> Stream.map(fn g -> g.(ctx) end)
       |> Stream.concat()
     end
   end
 
   def condi(goals) do
-    fn s ->
+    fn ctx ->
       goals
       |> to_goal_stream()
-      |> Stream.map(fn g -> g.(s) end)
+      |> Stream.map(fn g -> g.(ctx) end)
       |> Stream.interleave()
     end
   end
@@ -116,10 +90,10 @@ defmodule Ckini do
   []
   """
   def conda(goals) do
-    fn s ->
+    fn ctx ->
       {subs, subgoals} =
         Enum.find_value(goals, fn [subgoal | subgoals] ->
-          subs = to_goal(subgoal).(s)
+          subs = to_goal(subgoal).(ctx)
           if not Stream.empty?(subs), do: {subs, subgoals}
         end)
 
@@ -140,10 +114,10 @@ defmodule Ckini do
   Above example will run forever if we replace condu with conda.
   """
   def condu(goals) do
-    fn s ->
+    fn ctx ->
       {subs, subgoals} =
         Enum.find_value(goals, fn [subgoal | subgoals] ->
-          subs = to_goal(subgoal).(s)
+          subs = to_goal(subgoal).(ctx)
           if not Stream.empty?(subs), do: {subs, subgoals}
         end)
 
@@ -153,8 +127,8 @@ defmodule Ckini do
   end
 
   def project(var, f) do
-    fn s ->
-      to_goal(f.(Subst.deep_walk(s, var))).(s)
+    fn ctx ->
+      to_goal(f.(Subst.deep_walk(ctx.subst, var))).(ctx)
     end
   end
 end

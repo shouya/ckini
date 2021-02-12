@@ -3,7 +3,7 @@ defmodule Ckini.Goals do
   This module defines generic goals and combinators like anyo.
   """
 
-  alias Ckini.{Stream, Subst, Var}
+  alias Ckini.{Stream, Subst, Var, Context}
   import Ckini
 
   @type goal :: Ckini.goal()
@@ -44,10 +44,19 @@ defmodule Ckini.Goals do
   """
   @spec eq(Term.t(), Term.t()) :: goal()
   def eq(v, w) do
-    fn s ->
-      case unify(v, w, s) do
-        :fail -> Stream.empty()
-        new_s -> Stream.singleton(new_s)
+    fn c ->
+      case Context.unify(c, v, w) do
+        nil -> Stream.empty()
+        new_c -> Stream.singleton(new_c)
+      end
+    end
+  end
+
+  def neq(v, w) do
+    fn c ->
+      case Context.disunify(c, v, w) do
+        nil -> Stream.empty()
+        new_c -> Stream.singleton(new_c)
       end
     end
   end

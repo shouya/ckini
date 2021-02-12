@@ -24,15 +24,15 @@ defmodule Ckini.Term do
   def list?([_ | _]), do: true
   def list?(_), do: false
 
-  def reify(ts, subs) when is_tuple(ts) do
+  def reify(ts, ctx) when is_tuple(ts) do
     ts
     |> Tuple.to_list()
-    |> reify(subs)
+    |> reify(ctx)
     |> List.to_tuple()
   end
 
-  def reify(t, subs) do
-    t = Subst.deep_walk(subs, t)
+  def reify(t, ctx) do
+    t = Subst.deep_walk(ctx.subst, t)
     Subst.deep_walk(Subst.reify(t), t)
   end
 end
