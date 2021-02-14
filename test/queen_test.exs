@@ -218,11 +218,6 @@ defmodule QueenTest do
     end
   end
 
-  test "boardo works correctly" do
-    p = Var.new()
-    assert [] == run(20, p, boardo(p))
-  end
-
   test "single_queeno works correctly" do
     p = Var.new()
 
@@ -240,17 +235,15 @@ defmodule QueenTest do
 
   test "reverseo works" do
     p = Var.new()
-    assert [4, 3, 2, 1] == run(p, reverseo([1, 2, 3, 4], p))
+    assert [[4, 3, 2, 1]] == run(p, reverseo([1, 2, 3, 4], p))
   end
 
+  @tag :skip
   @tag timeout: 600_000
   test "valid_boardo works correctly" do
     p = Var.new()
 
-    for board <- run(10, p, valid_boardo(p)) do
-      print_board(board)
-      IO.puts("---")
-    end
+    assert [_, _] = run(10, p, valid_boardo(p))
   end
 
   def print_board(board) do
