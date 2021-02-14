@@ -4,15 +4,16 @@ defmodule Ckini.Context do
   alias Ckini.{Subst, Term}
 
   require Term
+  require Subst
 
-  defstruct subst: [], constraints: []
+  defstruct subst: Subst.new(), constraints: []
 
   @type t :: %__MODULE__{
           subst: Subst.t(),
           constraints: [Subst.t()]
         }
 
-  def new(subst \\ [], constraints \\ []) do
+  def new(subst \\ Subst.new(), constraints \\ []) do
     %__MODULE__{subst: subst, constraints: constraints}
   end
 
@@ -20,7 +21,7 @@ defmodule Ckini.Context do
   def unify(c, v, w) do
     case Subst.unify(c.subst, v, w) do
       nil -> nil
-      [] -> c
+      s when Subst.is_empty(s) -> c
       extra_s -> verify(%{c | subst: Subst.concat(extra_s, c.subst)})
     end
   end
@@ -28,7 +29,7 @@ defmodule Ckini.Context do
   def disunify(c, v, w) do
     case Subst.unify(c.subst, v, w) do
       nil -> c
-      [] -> nil
+      s when Subst.is_empty(s) -> nil
       extra_s -> %{c | constraints: [extra_s | c.constraints]}
     end
   end
@@ -55,12 +56,12 @@ defmodule Ckini.Context do
     |> Enum.map(fn subst ->
       Subst.filter_vars(subst, Subst.relevant_vars(subst, vars))
     end)
-    |> Enum.reject(&match?([], &1))
+    |> Enum.reject(&Subst.is_empty/1)
   end
 
   def reify_constraints(_subst, []), do: []
 
   def reify_constraints(subst, cs) do
-    {:never, Subst.deep_walk(subst, cs)}
+    {:never, Subst.deep_walk(subst, Subst.contraint_repr(cs))}
   end
 end

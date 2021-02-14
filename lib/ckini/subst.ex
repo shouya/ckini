@@ -8,11 +8,13 @@ defmodule Ckini.Subst do
   require Term
 
   @type assoc :: {Var.t(), Term.t()}
-  @type t :: [assoc]
+  @type t :: map()
+
+  defguard is_empty(s) when is_map(s) and map_size(s) == 0
 
   @spec new() :: t()
   def new() do
-    []
+    %{}
   end
 
   @doc """
@@ -31,7 +33,7 @@ defmodule Ckini.Subst do
   """
   @spec insert_unsafe(t(), Var.t(), Term.t()) :: t() | nil
   def insert_unsafe(subs, var, val) do
-    [{var, val} | subs]
+    Map.put(subs, var, val)
   end
 
   def occurs?(subs, var, val) do
@@ -44,12 +46,12 @@ defmodule Ckini.Subst do
 
   @spec singleton(Var.t(), Term.t()) :: t()
   def singleton(var, val) do
-    [{var, val}]
+    %{var => val}
   end
 
   @spec concat(t(), t()) :: t()
   def concat(s1, s2) do
-    s1 ++ s2
+    Map.merge(s1, s2)
   end
 
   @spec assocs(t()) :: [{Var.t(), Term.t()}]
@@ -62,7 +64,7 @@ defmodule Ckini.Subst do
     ww = walk(s, w)
 
     cond do
-      Term.eq?(vv, ww) -> []
+      Term.eq?(vv, ww) -> new()
       Term.var?(vv) -> insert(new(), vv, ww)
       Term.var?(ww) -> insert(new(), ww, vv)
       Term.list?(vv) and Term.list?(ww) -> unify_list(s, vv, ww)
@@ -70,6 +72,7 @@ defmodule Ckini.Subst do
     end
   end
 
+  @spec relevant_vars(t(), [Var.t()]) :: [Var.t()]
   def relevant_vars(_subs, []), do: []
 
   def relevant_vars(subs, [v | vs]) do
@@ -79,10 +82,14 @@ defmodule Ckini.Subst do
 
   @spec filter_vars(t(), [Var.t()]) :: t()
   def filter_vars(subs, vs) do
-    Enum.filter(subs, fn {v, _} -> Enum.any?(vs, &Var.eq?(&1, v)) end)
+    Enum.filter(
+      subs,
+      fn {v, _} -> Enum.any?(vs, &Var.eq?(&1, v)) end
+    )
+    |> Map.new()
   end
 
-  @spec unify_list([Term.t()], [Term.t()], t()) :: nil | t()
+  @spec unify_list(t(), [Term.t()], [Term.t()]) :: nil | t()
   defp unify_list(_s, [], []), do: []
 
   defp unify_list(s, [a | as], [b | bs]) do
@@ -105,32 +112,49 @@ defmodule Ckini.Subst do
   Verify a substitution against a base substitution.
   """
   @spec verify(t(), t(), t()) :: nil | t()
-  def verify(base, subst, acc \\ [])
-  def verify(_base, [], acc), do: acc
+  def verify(base, subst, acc \\ new())
+  def verify(_base, subst, acc) when is_empty(subst), do: acc
 
-  def verify(base, [{v, w} | sub], acc) do
+  def verify(base, subst, acc) do
+    {{v, w}, sub} = decompose(subst)
+
     case unify(base, v, w) do
-      [] -> nil
+      m when is_empty(m) -> nil
       nil -> verify(base, sub, acc)
       s -> verify(concat(s, base), sub, concat(s, acc))
     end
   end
 
+  @spec decompose(t()) :: nil | {{Var.t(), Term.t()}, t()}
+  def decompose(subst) do
+    case Map.keys(subst) do
+      [] ->
+        nil
+
+      [v | _] ->
+        {t, s} = Map.pop!(subst, v)
+        {{v, t}, s}
+    end
+  end
+
+  @spec walk(t(), Term.t()) :: Term.t()
   def walk(subst, %Var{} = var) do
-    case List.keyfind(subst, var, 0) do
+    case Map.get(subst, var) do
       nil -> var
-      {_, %Var{} = t} -> walk(remove(subst, var), t)
-      {_, t} -> t
+      %Var{} = t -> walk(subst, t)
+      t -> t
     end
   end
 
   def walk(_subst, t), do: t
 
+  @spec deep_walk(t(), Term.t()) :: Term.t()
   def deep_walk(sub, var) do
     case walk(sub, var) do
       %Var{} = t -> t
       [] -> []
       [t | ts] -> [deep_walk(sub, t) | deep_walk(sub, ts)]
+      # a quick hack to allow querying with a tuple
       t when is_tuple(t) -> List.to_tuple(deep_walk(sub, Tuple.to_list(t)))
       t -> t
     end
@@ -138,14 +162,19 @@ defmodule Ckini.Subst do
 
   @doc "Convert a substitution to a valid list term"
   @spec to_list(t()) :: Term.t()
-  def to_list([]), do: []
-  def to_list([{v, t} | sub]), do: [[v | t] | to_list(sub)]
+  def to_list(sub) do
+    Enum.map(sub, fn {k, v} -> [k | v] end)
+  end
+
+  def contraint_repr(subs) do
+    Enum.map(subs, &Enum.to_list/1)
+  end
 
   @spec reify(t(), Term.t()) :: t()
   def reify(subst \\ new(), t) do
     case walk(subst, t) do
       %Var{} = v ->
-        insert(subst, v, reify_name(length(subst)))
+        insert(subst, v, reify_name(size(subst)))
 
       [t | ts] ->
         subst |> reify(t) |> reify(ts)
@@ -164,20 +193,17 @@ defmodule Ckini.Subst do
   end
 
   def reify_subst(subst \\ new(), sub)
-  def reify_subst(subst, []), do: subst
+  def reify_subst(subst, s) when is_empty(s), do: subst
 
-  def reify_subst(subst, [{v, t} | s]) do
-    subst
-    |> reify(v)
-    |> reify(t)
-    |> reify_subst(s)
-  end
-
-  defp remove(subst, var) do
-    List.keydelete(subst, var, 0)
+  def reify_subst(subst, sub) do
+    Enum.reduce(sub, subst, fn {v, t}, subst ->
+      subst |> reify(v) |> reify(t)
+    end)
   end
 
   defp reify_name(n) do
     :"_#{n}"
   end
+
+  def size(s), do: map_size(s)
 end
