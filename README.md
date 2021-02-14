@@ -1,6 +1,6 @@
 # Ckini
 
-A MiniKanren-like logic programming framework in Elixir.
+A miniKanren-like logic programming framework in Elixir.
 
 ## Usage
 
@@ -42,7 +42,7 @@ I'm still working on a Macro interface to mimic the original TRS miniKanren impl
 
 More documentation in progress...
 
-## Improvement from The Little Schemer (TRS)'s MiniKanren implementation
+## Improvement from The Little Schemer (TRS)'s miniKanren implementation
 
 1. Ckini implementation doesn't use any Macro. So the `fresh` construct is not needed.
 2. Ckini allows multiple values to be queried in `run`, as opposed to one
@@ -51,4 +51,4 @@ More documentation in progress...
 ## References
 
 - The Reasoned Schemer by Daniel P. Friedman, et al.
-- Relational Programming in MiniKanren by William E. Byrd
+- Relational Programming in miniKanren by William E. Byrd
