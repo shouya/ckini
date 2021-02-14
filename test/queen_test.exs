@@ -74,14 +74,23 @@ defmodule QueenTest do
     all([
       boardo(b),
       eacho(&single_queeno/1, b),
-      fn -> valid_colso(b) end,
+      valid_colso(b),
       fn ->
-        bs = Var.new()
-        [staircaseo(b, bs, &shift_lefto/2), valid_diagonalo(bs)]
+        ls = Var.new()
+
+        [
+          all_diagonalo(b, ls),
+          eacho(&at_most_one_queeno/1, ls)
+        ]
       end,
       fn ->
-        bs = Var.new()
-        [staircaseo(b, bs, &shift_righto/2), valid_diagonalo(bs)]
+        [bb, ls] = Var.new_many(2)
+
+        [
+          reverseo(b, bb),
+          all_diagonalo(bb, ls),
+          eacho(&at_most_one_queeno/1, ls)
+        ]
       end
     ])
   end
@@ -91,9 +100,63 @@ defmodule QueenTest do
     [transposeo(b, b_cols), eacho(&single_queeno/1, b_cols)]
   end
 
-  def valid_diagonalo(b) do
-    b_cols = Var.new()
-    [transposeo(b, b_cols), eacho(&at_most_one_queeno/1, b_cols)]
+  def all_diagonalo(b, ls) do
+    [b_trans, ls1, ls2] = Var.new_many(3)
+
+    all([
+      bottom_left_diagonalo(b, ls1),
+      appendo(ls1, ls2, ls),
+      transposeo(b, [Var.new() | b_trans]),
+      bottom_left_diagonalo(b_trans, ls2)
+    ])
+  end
+
+  def bottom_left_diagonalo(b, ls) do
+    conde([
+      fn -> [eq([Var.new()], b), eq([], ls)] end,
+      fn ->
+        [bh, bt, lsh, lst] = Var.new_many(4)
+
+        [
+          eq([bh | bt], b),
+          eq([lsh | lst], ls),
+          diagonalo(b, lsh),
+          bottom_left_diagonalo(bt, lst)
+        ]
+      end
+    ])
+  end
+
+  def diagonalo(b, l) do
+    conde([
+      fn -> [eq([], b), eq([], l)] end,
+      fn ->
+        [r1, x, btl, btltl, ltl] = Var.new_many(5)
+
+        [
+          eq([r1 | btl], b),
+          eq([x | Var.new()], r1),
+          eq([x | ltl], l),
+          mapo(&tlo/2, btl, btltl),
+          diagonalo(btltl, ltl)
+        ]
+      end
+    ])
+  end
+
+  def reverseo(l1, l2) do
+    conde([
+      fn -> [eq(l1, []), eq(l2, [])] end,
+      fn ->
+        [x, xs, r] = Var.new_many(3)
+
+        [
+          eq(l1, [x | xs]),
+          reverseo(xs, r),
+          appendo(r, [x], l2)
+        ]
+      end
+    ])
   end
 
   def transposeo(l1, l2) do
@@ -133,57 +196,12 @@ defmodule QueenTest do
   def hdo(l, x), do: eq(l, [x | Var.new()])
   def tlo(l, xs), do: eq(l, [Var.new() | xs])
 
-  def staircaseo(b1, b2, shifto) do
-    conde([
-      fn ->
-        e = Var.new()
-        [eq(b1, [e]), eq(b2, [e])]
-      end,
-      fn ->
-        [b1hd, b1tl, b1tls, b2tl] = Var.new_many(4)
-
-        [
-          eq([b1hd | b1tl], b1),
-          eq([b1hd | b2tl], b2),
-          mapo(shifto, b1tl, b1tls),
-          staircaseo(b1tls, b2tl, shifto)
-        ]
-      end
-    ])
-  end
-
-  def shift_lefto(i, o) do
-    t = Var.new()
-    [eq([Var.new() | t], i), appendo(t, [0], o)]
-  end
-
-  def shift_righto(i, o) do
-    init = Var.new()
-    [eq([0 | init], o), inito(i, init)]
-  end
-
-  def inito(i, o) do
-    conde([
-      fn -> [eq([Var.new()], i), eq([], o)] end,
-      fn ->
-        [ihd, itl, otl] = Var.new_many(3)
-        [eq([ihd | itl], i), eq([ihd | otl], o), inito(itl, otl)]
-      end
-    ])
-  end
-
   def appendo(x, y, o) do
+    [xh, xt, ot] = Var.new_many(3)
+
     conde([
       fn -> [eq(x, []), eq(y, o)] end,
-      fn ->
-        [xh, xt, ot] = Var.new_many(3)
-
-        [
-          eq(x, [xh | xt]),
-          eq([xh | ot], o),
-          appendo(xt, y, ot)
-        ]
-      end
+      fn -> [eq(x, [xh | xt]), eq([xh | ot], o), appendo(xt, y, ot)] end
     ])
   end
 
@@ -220,22 +238,10 @@ defmodule QueenTest do
              run(p, transposeo(p, [[1, 2, 3], [4, 5, 6]]))
   end
 
-  test "staircaseo works correctly" do
+  test "reverseo works" do
     p = Var.new()
-
-    input = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
-
-    assert [[[1, 2, 3], [5, 6, 0], [9, 0, 0]]] =
-             run(p, staircaseo(input, p, &shift_lefto/2))
-
-    # assert [[[1, 2, 3], [0, 4, 5], [0, 0, 7]]] =
-    #          run(p, staircaseo(input, p, &shift_righto/2))
-
-    # assert [[[1, 2, 3], [0, 4, 5], [0, 0, 7]]] =
-    #          run(1, p, mapo(&shift_lefto/2, p, input))
+    assert [4, 3, 2, 1] == run(p, reverseo([1, 2, 3, 4], p))
   end
-
-  def ido(x, y), do: eq(x, y)
 
   @tag timeout: 600_000
   test "valid_boardo works correctly" do
