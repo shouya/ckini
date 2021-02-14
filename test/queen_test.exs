@@ -64,11 +64,17 @@ defmodule QueenTest do
     all([
       fn -> boardo(b) end,
       fn -> eacho(&valid_lineo/1, b) end,
+      fn -> valid_colso(b) end,
       fn ->
-        b_cols = Var.new()
-        [transposeo(b, b_cols), eacho(&valid_lineo/1, b_cols)]
+        b_rr = Var.new()
+        [staircaseo(b, b_rr, &shift_righto/2), valid_colso(b_rr)]
       end
     ])
+  end
+
+  def valid_colso(b) do
+    b_cols = Var.new()
+    [transposeo(b, b_cols), eacho(&valid_lineo/1, b_cols)]
   end
 
   def transposeo(l1, l2) do
@@ -94,7 +100,13 @@ defmodule QueenTest do
       fn -> [eq(l1, []), eq(l2, [])] end,
       fn ->
         [x, xs, y, ys] = Var.new_many(4)
-        [eq(l1, [x | xs]), eq(l2, [y | ys]), fo.(x, y), mapo(fo, xs, ys)]
+
+        [
+          eq(l1, [x | xs]),
+          eq(l2, [y | ys]),
+          fo.(x, y),
+          mapo(fo, xs, ys)
+        ]
       end
     ])
   end
@@ -102,38 +114,50 @@ defmodule QueenTest do
   def hdo(l, x), do: eq(l, [x | Var.new()])
   def tlo(l, xs), do: eq(l, [Var.new() | xs])
 
-  def staircase_rotateo(b1, b2) do
+  def staircaseo(b1, b2, shifto) do
     conde([
       fn ->
-        [l1, l2] = Var.new_many(2)
-
-        [
-          eq(b1, [l1]),
-          eq(b2, [l2]),
-          rotateo(l1, l2)
-        ]
+        e = Var.new()
+        [eq(b1, [e]), eq(b2, [e])]
       end,
       fn ->
-        [b1r, b1rtl, b2r, b2rtl] = Var.new_many(4)
+        [b1hd, b1tl, b1tls, b2tl] = Var.new_many(4)
 
         [
-          mapo(&rotateo/2, b1, b1r),
-          mapo(&rotateo/2, , )
+          eq([b1hd | b1tl], b1),
+          eq([b1hd | b2tl], b2),
+          staircaseo(b1tls, b2tl, shifto),
+          mapo(shifto, b1tl, b1tls)
         ]
       end
     ])
   end
 
-  def rotateo(i, o) do
-    [h, t] = Var.new_many(2)
-    [eq([h | t], i), appendo(t, [h], o)]
+  def shift_lefto(i, o) do
+    t = Var.new()
+    [eq([Var.new() | t], i), appendo(t, [0], o)]
+  end
+
+  def shift_righto(i, o) do
+    init = Var.new()
+    [eq([0 | init], o), inito(i, init)]
+  end
+
+  def inito(i, o) do
+    conde([
+      fn -> [eq([Var.new()], i), eq([], o)] end,
+      fn ->
+        [ihd, itl, otl] = Var.new_many(3)
+        [eq([ihd | itl], i), eq([ihd | otl], o), inito(itl, otl)]
+      end
+    ])
   end
 
   def appendo(x, y, o) do
     conde([
       fn -> [eq(x, []), eq(y, o)] end,
       fn ->
-        [xh, xt, ot] = Var.new_many(2)
+        [xh, xt, ot] = Var.new_many(3)
 
         [
           eq(x, [xh | xt]),
@@ -177,7 +201,22 @@ defmodule QueenTest do
              run(p, transposeo(p, [[1, 2, 3], [4, 5, 6]]))
   end
 
-  @tag timeout: 10_000
+  test "staircaseo works correctly" do
+    p = Var.new()
+
+    input = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+
+    assert [[[1, 2, 3], [5, 6, 0], [9, 0, 0]]] =
+             run(p, staircaseo(input, p, &shift_lefto/2))
+
+    assert [[[1, 2, 3], [0, 4, 5], [0, 0, 7]]] =
+             run(p, staircaseo(input, p, &shift_righto/2))
+
+    assert [[[1, 2, 3], [0, 4, 5], [0, 0, 7]]] =
+             run(1, p, mapo(&hdo/2, input, p))
+  end
+
+  @tag timeout: 600_000
   test "valid_boardo works correctly" do
     p = Var.new()
 
