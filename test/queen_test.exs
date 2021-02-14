@@ -41,12 +41,22 @@ defmodule QueenTest do
     all([lengtho(b, @n), eacho(&lineo/1, b)])
   end
 
-  def valid_lineo(l) do
+  def single_queeno(l) do
     xs = Var.new()
 
     condi([
       fn -> [eq([1 | xs], l), all_zero_lineo(xs)] end,
-      fn -> [eq([0 | xs], l), valid_lineo(xs)] end
+      fn -> [eq([0 | xs], l), single_queeno(xs)] end
+    ])
+  end
+
+  def at_most_one_queeno(l) do
+    xs = Var.new()
+
+    condi([
+      fn -> eq([], l) end,
+      fn -> [eq([1 | xs], l), all_zero_lineo(xs)] end,
+      fn -> [eq([0 | xs], l), at_most_one_queeno(xs)] end
     ])
   end
 
@@ -62,19 +72,28 @@ defmodule QueenTest do
 
   def valid_boardo(b) do
     all([
-      fn -> boardo(b) end,
-      fn -> eacho(&valid_lineo/1, b) end,
+      boardo(b),
+      eacho(&single_queeno/1, b),
       fn -> valid_colso(b) end,
       fn ->
-        b_rr = Var.new()
-        [staircaseo(b, b_rr, &shift_righto/2), valid_colso(b_rr)]
+        bs = Var.new()
+        [staircaseo(b, bs, &shift_lefto/2), valid_diagonalo(bs)]
+      end,
+      fn ->
+        bs = Var.new()
+        [staircaseo(b, bs, &shift_righto/2), valid_diagonalo(bs)]
       end
     ])
   end
 
   def valid_colso(b) do
     b_cols = Var.new()
-    [transposeo(b, b_cols), eacho(&valid_lineo/1, b_cols)]
+    [transposeo(b, b_cols), eacho(&single_queeno/1, b_cols)]
+  end
+
+  def valid_diagonalo(b) do
+    b_cols = Var.new()
+    [transposeo(b, b_cols), eacho(&at_most_one_queeno/1, b_cols)]
   end
 
   def transposeo(l1, l2) do
@@ -126,8 +145,8 @@ defmodule QueenTest do
         [
           eq([b1hd | b1tl], b1),
           eq([b1hd | b2tl], b2),
-          staircaseo(b1tls, b2tl, shifto),
-          mapo(shifto, b1tl, b1tls)
+          mapo(shifto, b1tl, b1tls),
+          staircaseo(b1tls, b2tl, shifto)
         ]
       end
     ])
@@ -186,10 +205,10 @@ defmodule QueenTest do
     assert [] == run(20, p, boardo(p))
   end
 
-  test "valid_lineo works correctly" do
+  test "single_queeno works correctly" do
     p = Var.new()
 
-    for line <- run(20, p, valid_lineo(p)) do
+    for line <- run(20, p, single_queeno(p)) do
       assert 1 == Enum.reduce(line, &(&1 + &2))
     end
   end
@@ -209,12 +228,14 @@ defmodule QueenTest do
     assert [[[1, 2, 3], [5, 6, 0], [9, 0, 0]]] =
              run(p, staircaseo(input, p, &shift_lefto/2))
 
-    assert [[[1, 2, 3], [0, 4, 5], [0, 0, 7]]] =
-             run(p, staircaseo(input, p, &shift_righto/2))
+    # assert [[[1, 2, 3], [0, 4, 5], [0, 0, 7]]] =
+    #          run(p, staircaseo(input, p, &shift_righto/2))
 
-    assert [[[1, 2, 3], [0, 4, 5], [0, 0, 7]]] =
-             run(1, p, mapo(&hdo/2, input, p))
+    # assert [[[1, 2, 3], [0, 4, 5], [0, 0, 7]]] =
+    #          run(1, p, mapo(&shift_lefto/2, p, input))
   end
+
+  def ido(x, y), do: eq(x, y)
 
   @tag timeout: 600_000
   test "valid_boardo works correctly" do
@@ -222,11 +243,8 @@ defmodule QueenTest do
 
     for board <- run(10, p, valid_boardo(p)) do
       print_board(board)
-      IO.puts("")
+      IO.puts("---")
     end
-  end
-
-  test "find all solutions" do
   end
 
   def print_board(board) do
@@ -241,5 +259,7 @@ defmodule QueenTest do
     end
     |> Enum.join("\n")
     |> IO.puts()
+
+    IO.puts("")
   end
 end
