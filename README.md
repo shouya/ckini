@@ -48,6 +48,13 @@ More documentation in progress...
 2. Ckini allows multiple values to be queried in `run`, as opposed to one
 3. Ckini's `walk` implementation has been designed to avoid circular reference
 
+## Roadmap
+
+1. [x] conda and condu
+2. [x] neq
+3. [ ] symbolo constraint
+4. [ ] absento constraint
+
 ## References
 
 - The Reasoned Schemer by Daniel P. Friedman, et al.

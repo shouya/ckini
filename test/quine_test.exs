@@ -24,6 +24,7 @@ defmodule QuineTest do
         [
           eq([rator, rand], exp),
           evalo(rator, env, [:closure, x, body, env_n]),
+          varo(x),
           evalo(rand, env, a),
           evalo(body, [[x | a] | env_n], val)
         ]
@@ -72,7 +73,6 @@ defmodule QuineTest do
     condi([eq(v, :x), eq(v, :quote), eq(v, :list)])
   end
 
-  @tag timeout: 100_000
   test "quine" do
     q = Var.new()
     env = [[:list | :list], [:quote | :quote]]
@@ -84,6 +84,6 @@ defmodule QuineTest do
       [:quote, [:lambda, [:x], [:list, :x, [:list, :quote, :x]]]]
     ]
 
-    assert [quine] == run(q, evalo(quine, env, q))
+    assert [:_0] = run(q, evalo(quine, env, quine))
   end
 end
