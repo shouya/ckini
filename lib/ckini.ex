@@ -1,5 +1,5 @@
 defmodule Ckini do
-  alias Ckini.{Subst, Stream, Term, Context}
+  alias Ckini.{Subst, Stream, Term, Context, Goals}
 
   @type goal :: (Context.t() -> Stream.t(Context.t()))
 
@@ -92,7 +92,12 @@ defmodule Ckini do
   def conda(goals) do
     fn ctx ->
       {subs, subgoals} =
-        Enum.find_value(goals, fn [subgoal | subgoals] ->
+        goals
+        |> Enum.map(fn
+          g when is_function(g, 0) -> g.()
+          gs -> gs
+        end)
+        |> Enum.find_value(fn [subgoal | subgoals] ->
           subs = to_goal(subgoal).(ctx)
           if not Stream.empty?(subs), do: {subs, subgoals}
         end)
@@ -116,7 +121,12 @@ defmodule Ckini do
   def condu(goals) do
     fn ctx ->
       {subs, subgoals} =
-        Enum.find_value(goals, fn [subgoal | subgoals] ->
+        goals
+        |> Enum.map(fn
+          g when is_function(g, 0) -> g.()
+          gs -> gs
+        end)
+        |> Enum.find_value(fn [subgoal | subgoals] ->
           subs = to_goal(subgoal).(ctx)
           if not Stream.empty?(subs), do: {subs, subgoals}
         end)
@@ -130,5 +140,12 @@ defmodule Ckini do
     fn ctx ->
       to_goal(f.(Subst.deep_walk(ctx.subst, var))).(ctx)
     end
+  end
+
+  def peek(var) do
+    project(var, fn v ->
+      IO.inspect(v)
+      Goals.succ()
+    end)
   end
 end
