@@ -49,9 +49,9 @@ defmodule Ckini.Term do
       |> Subst.reify_substs(cs)
 
     term = Subst.deep_walk(subst, t)
-    constraints = Context.reify_constraints(subst, cs)
+    neq = Context.reify_neq(subst, cs)
 
-    case constraints do
+    case neq do
       [] -> term
       c -> {term, c}
     end

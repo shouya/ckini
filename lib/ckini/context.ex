@@ -6,15 +6,15 @@ defmodule Ckini.Context do
   require Term
   require Subst
 
-  defstruct subst: Subst.new(), constraints: []
+  defstruct subst: Subst.new(), neq: []
 
   @type t :: %__MODULE__{
           subst: Subst.t(),
-          constraints: [Subst.t()]
+          neq: [Subst.t()]
         }
 
-  def new(subst \\ Subst.new(), constraints \\ []) do
-    %__MODULE__{subst: subst, constraints: constraints}
+  def new(subst \\ Subst.new(), neq \\ []) do
+    %__MODULE__{subst: subst, neq: neq}
   end
 
   @spec unify(t(), Term.t(), Term.t()) :: nil | t()
@@ -30,26 +30,26 @@ defmodule Ckini.Context do
     case Subst.unify(c.subst, v, w) do
       nil -> c
       s when Subst.is_empty(s) -> nil
-      extra_s -> %{c | constraints: [extra_s | c.constraints]}
+      extra_s -> %{c | neq: [extra_s | c.neq]}
     end
   end
 
-  def verify(%{constraints: [], subst: _} = ctx), do: ctx
+  def verify(%{neq: [], subst: _} = ctx), do: ctx
 
-  def verify(%{constraints: [c | cs], subst: sub} = ctx) do
+  def verify(%{neq: [c | cs], subst: sub} = ctx) do
     case Subst.verify(sub, c) do
       nil ->
         nil
 
       new_c ->
-        case verify(%{ctx | constraints: cs}) do
+        case verify(%{ctx | neq: cs}) do
           nil -> nil
-          new_ctx -> %{new_ctx | constraints: [new_c | new_ctx.constraints]}
+          new_ctx -> %{new_ctx | neq: [new_c | new_ctx.neq]}
         end
     end
   end
 
-  def purify(%{constraints: cs}, t) do
+  def purify(%{neq: cs}, t) do
     vars = Term.all_vars(t)
 
     cs
@@ -59,9 +59,9 @@ defmodule Ckini.Context do
     |> Enum.reject(&Subst.is_empty/1)
   end
 
-  def reify_constraints(_subst, []), do: []
+  def reify_neq(_subst, []), do: []
 
-  def reify_constraints(subst, cs) do
-    {:never, Subst.deep_walk(subst, Subst.contraint_repr(cs))}
+  def reify_neq(subst, cs) do
+    {:neq, Subst.deep_walk(subst, Subst.contraint_repr(cs))}
   end
 end
