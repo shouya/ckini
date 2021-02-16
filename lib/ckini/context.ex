@@ -15,7 +15,7 @@ defmodule Ckini.Context do
   require Term
   require Subst
 
-  defstruct subst: Subst.new(), neq: [], sym: MapSet.new(), abs: []
+  defstruct subst: Subst.new(), neq: [], sym: MapSet.new(), abs: MapSet.new()
 
   @type t :: %__MODULE__{
           subst: Subst.t(),
@@ -24,8 +24,8 @@ defmodule Ckini.Context do
           abs: MapSet.new({Term.t(), Term.t()})
         }
 
-  def new(subst \\ Subst.new(), neq \\ [], sym \\ MapSet.new()) do
-    %__MODULE__{subst: subst, neq: neq, sym: sym}
+  def new() do
+    %__MODULE__{}
   end
 
   @spec unify(t(), Term.t(), Term.t()) :: nil | t()
@@ -107,7 +107,7 @@ defmodule Ckini.Context do
       ctx
       | neq: purify_neq(ctx.neq, r, ctx.subst),
         sym: purify_sym(ctx.sym, r),
-        abs: purify_abs(ctx.sym, r, ctx.subst)
+        abs: purify_abs(ctx.abs, r, ctx.subst)
     }
   end
 
@@ -131,6 +131,7 @@ defmodule Ckini.Context do
     |> Enum.map(fn {t, u} -> Subst.deep_walk(subst, {t, u}) end)
     |> Enum.reject(fn {t, _u} -> Term.concrete?(t) end)
     |> Enum.reject(fn {t, u} -> Subst.anyvar?(r, t) or Subst.anyvar?(r, u) end)
+    |> Enum.map(fn {t, u} -> Subst.deep_walk(r, {t, u}) end)
   end
 
   @spec add_sym_constraint(t, Var.t(), Term.t()) :: t() | nil

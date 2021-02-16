@@ -132,7 +132,7 @@ defmodule Ckini.Goals do
   Assert a variable to be a symbol.
 
   iex> use Ckini
-  iex> [q, x] = Var.new_many(2)
+  iex> q = Var.new()
   iex> run(q, [eq(q, :hello), symbolo(q)])
   [:hello]
   iex> run(q, [eq(q, []), symbolo(q)])
@@ -156,7 +156,16 @@ defmodule Ckini.Goals do
   end
 
   @doc """
-  Assert term u never appear in term t.
+  Assert term t never contains term u.
+
+  iex> use Ckini
+  iex> q = Var.new()
+  iex> run(q, absento(q, 42))
+  [{:_0, [abs: [_0: 42]]}]
+  iex> run(q, [eq(q, 42), absento(q, 42)])
+  []
+  iex> run(q, [eq(q, [:the, :answer, :is, [42]]), absento(q, 42)])
+  []
   """
   @spec absento(Term.t(), Term.t()) :: goal()
   def absento(t, u) do

@@ -57,11 +57,6 @@ defmodule Ckini.Subst do
   @spec assocs(t()) :: [{Var.t(), Term.t()}]
   def assocs(t), do: t
 
-  @doc "Returns true if term u contains term v"
-  @spec contains?(t(), Term.t(), Term.t()) :: boolean()
-  def contains?(sub, u, v) do
-  end
-
   # returns only extra associations
   @spec unify(t(), Term.t(), Term.t()) :: nil | t()
   def unify(s, v, w) do
@@ -84,6 +79,11 @@ defmodule Ckini.Subst do
       [h | t] -> anyvar?(sub, h) or anyvar?(sub, t)
       _ -> false
     end
+  end
+
+  @spec empty?(t()) :: boolean()
+  def empty?(t) do
+    is_empty(t)
   end
 
   @spec unify_list(t(), [Term.t()], [Term.t()]) :: nil | t()

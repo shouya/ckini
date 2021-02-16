@@ -51,7 +51,7 @@ defmodule Ckini.Term do
   @doc "check equality of two terms under given substitution"
   def equal?(t, u, subst) do
     new_s = Subst.unify(subst, u, t)
-    is_nil(new_s) or Subst.is_empty(new_s)
+    is_nil(new_s) or Subst.empty?(new_s)
   end
 
   @doc "Reify all variables in a term and its related constraints"
