@@ -129,9 +129,7 @@ defmodule Ckini.Goals do
   end
 
   @doc """
-  Assert a variable to be a symbol (i.e. not list or anything else)
-
-  Also note that `[]` is not regarded as a symbol.
+  Assert a variable to be a symbol.
 
   iex> use Ckini
   iex> [q, x] = Var.new_many(2)
@@ -150,10 +148,22 @@ defmodule Ckini.Goals do
     fn c ->
       t = Subst.walk(c.subst, v)
 
-      case Context.add_symbol_constraint(c, v, t) do
+      case Context.add_sym_constraint(c, v, t) do
         nil -> Stream.empty()
         c -> Stream.singleton(c)
       end
+    end
+  end
+
+  @doc """
+  Assert term u never appear in term t.
+  """
+  @spec absento(Term.t(), Term.t()) :: goal()
+  def absento(t, u) do
+    fn c ->
+      if Term.contains?(t, u, c.subst),
+        do: Stream.empty(),
+        else: Stream.singleton(Context.add_abs_constraint(c, t, u))
     end
   end
 

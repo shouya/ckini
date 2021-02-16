@@ -57,6 +57,11 @@ defmodule Ckini.Subst do
   @spec assocs(t()) :: [{Var.t(), Term.t()}]
   def assocs(t), do: t
 
+  @doc "Returns true if term u contains term v"
+  @spec contains?(t(), Term.t(), Term.t()) :: boolean()
+  def contains?(sub, u, v) do
+  end
+
   # returns only extra associations
   @spec unify(t(), Term.t(), Term.t()) :: nil | t()
   def unify(s, v, w) do
@@ -129,7 +134,7 @@ defmodule Ckini.Subst do
     end
   end
 
-  @spec walk(t(), Term.t()) :: Term.t()
+  @spec walk(t(), Term.t() | tuple()) :: Term.t() | tuple()
   def walk(subst, %Var{} = var) do
     case Map.get(subst, var) do
       nil -> var
@@ -140,13 +145,12 @@ defmodule Ckini.Subst do
 
   def walk(_subst, t), do: t
 
-  @spec deep_walk(t(), Term.t()) :: Term.t()
+  @spec deep_walk(t(), Term.t() | tuple()) :: Term.t() | tuple()
   def deep_walk(sub, var) do
     case walk(sub, var) do
       %Var{} = t -> t
       [] -> []
       [t | ts] -> [deep_walk(sub, t) | deep_walk(sub, ts)]
-      # a quick hack to allow querying with a tuple
       t when is_tuple(t) -> List.to_tuple(deep_walk(sub, Tuple.to_list(t)))
       t -> t
     end

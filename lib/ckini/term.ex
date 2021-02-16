@@ -26,11 +26,36 @@ defmodule Ckini.Term do
   def list?([_ | _]), do: true
   def list?(_), do: false
 
-  def all_vars(t) when is_basic(t), do: []
-  def all_vars(%Var{} = v), do: [v]
-  def all_vars([]), do: []
-  def all_vars([x | xs]), do: all_vars(x) ++ all_vars(xs)
+  @doc "check if a term is concrete, i.e. the term doesn't contain any variable"
+  @spec concrete?(t(), Subst.t()) :: boolean()
+  def concrete?(t, subst) do
+    concrete?(Subst.deep_walk(subst, t))
+  end
 
+  def concrete?(t) do
+    case t do
+      %Var{} -> false
+      t when is_basic(t) -> true
+      xs when is_list(xs) -> Enum.all?(xs, &concrete?/1)
+    end
+  end
+
+  @doc "test if term t contains term u with given substitution"
+  def contains?(t, u, subst) do
+    case Subst.walk(subst, t) do
+      xs when is_list(xs) -> Enum.any?(xs, &contains?(&1, u, subst))
+      t -> equal?(t, u, subst)
+    end
+  end
+
+  @doc "check equality of two terms under given substitution"
+  def equal?(t, u, subst) do
+    new_s = Subst.unify(subst, u, t)
+    is_nil(new_s) or Subst.is_empty(new_s)
+  end
+
+  @doc "Reify all variables in a term and its related constraints"
+  @spec reify(any(), Context.t()) :: any() | {any(), keyword()}
   def reify(ts, ctx) when is_tuple(ts) do
     ts
     |> Tuple.to_list()

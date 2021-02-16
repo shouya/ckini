@@ -1,17 +1,27 @@
 defmodule Ckini.Context do
-  @moduledoc false
+  @moduledoc """
+  An intermediate state of computation.
+
+  It contains a substitution of variables and a set of different types
+  of constraints:
+
+  - neq: created using `neq` goal
+  - sym: created using `symbolo` goal
+  - abs: created using `absento` goal
+  """
 
   alias Ckini.{Subst, Term, Var}
 
   require Term
   require Subst
 
-  defstruct subst: Subst.new(), neq: [], sym: MapSet.new()
+  defstruct subst: Subst.new(), neq: [], sym: MapSet.new(), abs: []
 
   @type t :: %__MODULE__{
           subst: Subst.t(),
           neq: [Subst.t()],
-          sym: MapSet.new(Var.t())
+          sym: MapSet.new(Var.t()),
+          abs: MapSet.new({Term.t(), Term.t()})
         }
 
   def new(subst \\ Subst.new(), neq \\ [], sym \\ MapSet.new()) do
@@ -41,6 +51,7 @@ defmodule Ckini.Context do
     c
     |> verify_sym()
     |> verify_neq()
+    |> verify_abs()
   end
 
   @spec verify_neq(t() | nil) :: t() | nil
@@ -76,6 +87,17 @@ defmodule Ckini.Context do
     end
   end
 
+  @spec verify_abs(t() | nil) :: t() | nil
+  def verify_abs(nil), do: nil
+  def verify_abs(%{abs: []} = ctx), do: ctx
+
+  def verify_abs(%{abs: vs, subst: subst} = ctx) do
+    case Enum.find(vs, fn {t, u} -> Term.contains?(t, u, subst) end) do
+      nil -> ctx
+      _ -> nil
+    end
+  end
+
   @doc """
   Retain only the constraints related to the given term.
   """
@@ -84,7 +106,8 @@ defmodule Ckini.Context do
     %{
       ctx
       | neq: purify_neq(ctx.neq, r, ctx.subst),
-        sym: purify_sym(ctx.sym, r)
+        sym: purify_sym(ctx.sym, r),
+        abs: purify_abs(ctx.sym, r, ctx.subst)
     }
   end
 
@@ -103,8 +126,15 @@ defmodule Ckini.Context do
     |> Enum.map(fn v -> Subst.walk(r, v) end)
   end
 
-  @spec add_symbol_constraint(t, Var.t(), Term.t()) :: t() | nil
-  def add_symbol_constraint(%{sym: sym} = ctx, v, t) do
+  def purify_abs(abs, r, subst) do
+    abs
+    |> Enum.map(fn {t, u} -> Subst.deep_walk(subst, {t, u}) end)
+    |> Enum.reject(fn {t, _u} -> Term.concrete?(t) end)
+    |> Enum.reject(fn {t, u} -> Subst.anyvar?(r, t) or Subst.anyvar?(r, u) end)
+  end
+
+  @spec add_sym_constraint(t, Var.t(), Term.t()) :: t() | nil
+  def add_sym_constraint(%{sym: sym} = ctx, v, t) do
     cond do
       Term.is_symbol(t) -> %{ctx | sym: MapSet.delete(sym, v)}
       Term.var?(t) -> %{ctx | sym: MapSet.put(sym, v)}
@@ -112,11 +142,20 @@ defmodule Ckini.Context do
     end
   end
 
+  @spec add_abs_constraint(t, Term.t(), Term.t()) :: t() | nil
+  def add_abs_constraint(%{subst: subst, abs: abs} = ctx, t, u) do
+    cond do
+      Term.concrete?(t, subst) -> ctx
+      true -> %{ctx | abs: MapSet.put(abs, {t, u})}
+    end
+  end
+
   @spec constraints(t()) :: keyword()
   def constraints(ctx) do
     [
       neq: ctx.neq,
-      sym: ctx.sym
+      sym: ctx.sym,
+      abs: ctx.abs
     ]
     |> Enum.reject(fn {_, v} -> Enum.empty?(v) end)
   end
