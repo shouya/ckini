@@ -109,19 +109,19 @@ defmodule Ckini.Subst do
   defp unify_list(_s, _, _), do: nil
 
   @doc """
-  Verify a substitution against a base substitution.
+  Verify an neq substitution against a base substitution.
   """
-  @spec verify(t(), t(), t()) :: nil | t()
-  def verify(base, subst, acc \\ new())
-  def verify(_base, subst, acc) when is_empty(subst), do: acc
+  @spec verify_neq(t(), t(), t()) :: nil | t()
+  def verify_neq(base, subst, acc \\ new())
+  def verify_neq(_base, subst, acc) when is_empty(subst), do: acc
 
-  def verify(base, subst, acc) do
+  def verify_neq(base, subst, acc) do
     {{v, w}, sub} = decompose(subst)
 
     case unify(base, v, w) do
       m when is_empty(m) -> nil
-      nil -> verify(base, sub, acc)
-      s -> verify(concat(s, base), sub, concat(s, acc))
+      nil -> verify_neq(base, sub, acc)
+      s -> verify_neq(concat(s, base), sub, concat(s, acc))
     end
   end
 

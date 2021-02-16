@@ -67,9 +67,9 @@ defmodule Ckini.Goals do
   [4]
   iex> [y,z] = Var.new_many(2)
   iex> run(x, [neq(x, [y,z]), eq(y, 10)])
-  [{:_0, {:never, [[{:_0, [:_1, :_2]}]]}}]
+  [{:_0, {:neq, [[{:_0, [:_1, :_2]}]]}}]
   iex> run(x, [neq(x, [y,z]), neq(x, :hello)])
-  [{:_0, {:never, [[{:_0, :hello}], [{:_0, [:_1, :_2]}]]}}]
+  [{:_0, {:neq, [[{:_0, :hello}], [{:_0, [:_1, :_2]}]]}}]
   iex> run(x, [neq(x, [y,z]), neq(x, :hello), eq(x, [1,2,3])])
   [[1,2,3]]
   """
