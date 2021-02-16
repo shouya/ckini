@@ -44,18 +44,19 @@ I'm still working on a Macro interface to mimic the original TRS miniKanren impl
 
 More documentation in progress...
 
-## Improvement from The Little Schemer (TRS)'s miniKanren implementation
+## Features
 
-1. Ckini implementation doesn't use any Macro. So the `fresh` construct is not needed.
-2. Ckini allows multiple values to be queried in `run`, as opposed to one
-3. Ckini's `walk` implementation has been designed to avoid circular reference
+1. Ckini's substitution is implemented using Elixir `Map` unify is implemented using incremental approach. This potentially makes it more efficient.
+2. Ckini allows multiple values to be queried in `run`.
+3. Ckini's implementation doesn't use any Macro. As a result, `fresh` is not needed.
 
 ## Roadmap
 
 1. [x] conda and condu
 2. [x] neq
 3. [x] symbolo constraint
-4. [ ] absento constraint
+4. [x] absento constraint
+5. [ ] numbero constraint
 
 ## References
 
