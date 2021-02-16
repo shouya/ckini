@@ -109,15 +109,11 @@ defmodule Ckini.Goals do
   end
 
   @doc """
-
   copy_termo creates a copy of its first argument, replacing logic
   variables with new variables.
 
-  iex> import Ckini
-  iex> w = Ckini.Var.new()
-  iex> x = Ckini.Var.new()
-  iex> y = Ckini.Var.new()
-  iex> z = Ckini.Var.new()
+  iex> use Ckini
+  iex> [w, x, y, z] = Var.new_many(4)
   iex> run({w, z}, [
   ...>   eq([:a, x, 5, y, x], w),
   ...>   copy_termo(w, z)
@@ -132,6 +128,21 @@ defmodule Ckini.Goals do
     end)
   end
 
+  @doc """
+  Assert a variable to be a symbol (i.e. not list or anything else)
+
+  Also note that `[]` is not regarded as a symbol.
+
+  iex> use Ckini
+  iex> [q, x] = Var.new_many(2)
+  iex> run(q, [eq(q, :hello), symbolo(q)])
+  [:hello]
+  iex> run(q, [eq(q, []), symbolo(q)])
+  []
+  iex> run(q, [symbolo(q), conde([eq(q, 1), eq(q, :a), eq(q, [])])])
+  [:a]
+  """
+  @spec symbolo(Term.t()) :: goal()
   def symbolo(v) do
     fn c ->
       t = Subst.walk(c.subst, v)

@@ -34,7 +34,9 @@ A miniKanren-like logic programming framework in Elixir.
 ```
 
 
-API available: `run/2`, `run/3`, `eq` (`===`), `neq` (`=/=`), `conde`, `condi`, `conda`, `all`, `project`. (Please note `fresh` is not required with this syntax).
+API available: `run/2`, `run/3`, `eq` (`===`), `neq` (`=/=`), `conde`, `condi`, `conda`, `all`, `project`, `succ`, `fail`, `symbolo`, `copy_termo`, `anyo`, `onceo`.
+
+(Please note `fresh` is not required with this syntax).
 
 Check out the https://github.com/shouya/ckini/blob/master/test/ckini_test.exs for more usage examples.
 
@@ -52,7 +54,7 @@ More documentation in progress...
 
 1. [x] conda and condu
 2. [x] neq
-3. [ ] symbolo constraint
+3. [x] symbolo constraint
 4. [ ] absento constraint
 
 ## References

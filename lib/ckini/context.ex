@@ -44,6 +44,7 @@ defmodule Ckini.Context do
   end
 
   @spec verify_neq(t() | nil) :: t() | nil
+  def verify_neq(nil), do: nil
   def verify_neq(%{neq: [], subst: _} = ctx), do: ctx
 
   def verify_neq(%{neq: [c | cs], subst: sub} = ctx) do
