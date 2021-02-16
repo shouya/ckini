@@ -34,7 +34,7 @@ A miniKanren-like logic programming framework in Elixir.
 ```
 
 
-API available: `run/2`, `run/3`, `eq` (`===`), `neq` (`=/=`), `conde`, `condi`, `conda`, `all`, `project`, `succ`, `fail`, `symbolo`, `copy_termo`, `anyo`, `onceo`.
+API available: `run/2`, `run/3`, `eq` (`===`), `neq` (`=/=`), `conde`, `condi`, `conda`, `all`, `project`, `succ`, `fail`, `symbolo`, `absento`, `copy_termo`, `anyo`, `onceo`.
 
 (Please note `fresh` is not required with this syntax).
 
