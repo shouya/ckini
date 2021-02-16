@@ -141,7 +141,8 @@ defmodule Ckini.Goals do
   []
   iex> run(q, [symbolo(q), conde([eq(q, 1), eq(q, :a), eq(q, [])])])
   [:a]
-  iex> run(q, symbolo(q))
+  iex> v = Var.new()
+  iex> run(q, [symbolo(q), symbolo(v)])
   [{:_0, sym: [:_0]}]
   """
   @spec symbolo(Term.t()) :: goal()
