@@ -68,10 +68,10 @@ defmodule Ckini.Goals do
   iex> run(x, [eq(4, x), neq(x, 3)])
   [4]
   iex> [y,z] = Var.new_many(2)
-  iex> run(x, [neq(x, [y,z]), eq(y, 10)])
-  [{:_0, {:neq, [[{:_0, [:_1, :_2]}]]}}]
-  iex> run(x, [neq(x, [y,z]), neq(x, :hello)])
-  [{:_0, {:neq, [[{:_0, :hello}], [{:_0, [:_1, :_2]}]]}}]
+  iex> run(x, [neq(x, [y,z]), eq(y, 999), eq(z, 998)])
+  [{:_0, [neq: [[_0: [999, 998]]]]}]
+  iex> run(x, [neq(x, [:hello, :world]), neq(x, :hello)])
+  [{:_0, [neq: [[_0: :hello], [_0: [:hello, :world]]]]}]
   iex> run(x, [neq(x, [y,z]), neq(x, :hello), eq(x, [1,2,3])])
   [[1,2,3]]
   """
@@ -141,6 +141,8 @@ defmodule Ckini.Goals do
   []
   iex> run(q, [symbolo(q), conde([eq(q, 1), eq(q, :a), eq(q, [])])])
   [:a]
+  iex> run(q, symbolo(q))
+  [{:_0, sym: [:_0]}]
   """
   @spec symbolo(Term.t()) :: goal()
   def symbolo(v) do

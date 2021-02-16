@@ -14,8 +14,8 @@ defmodule Ckini.Context do
           sym: MapSet.new(Var.t())
         }
 
-  def new(subst \\ Subst.new(), neq \\ []) do
-    %__MODULE__{subst: subst, neq: neq}
+  def new(subst \\ Subst.new(), neq \\ [], sym \\ MapSet.new()) do
+    %__MODULE__{subst: subst, neq: neq, sym: sym}
   end
 
   @spec unify(t(), Term.t(), Term.t()) :: nil | t()
@@ -76,20 +76,31 @@ defmodule Ckini.Context do
     end
   end
 
-  def purify(%{neq: cs}, t) do
-    vars = Term.all_vars(t)
-
-    cs
-    |> Enum.map(fn subst ->
-      Subst.filter_vars(subst, Subst.relevant_vars(subst, vars))
-    end)
-    |> Enum.reject(&Subst.is_empty/1)
+  @doc """
+  Retain only the constraints related to the given term.
+  """
+  @spec purify(t(), Subst.t()) :: t()
+  def purify(ctx, r) do
+    %{
+      ctx
+      | neq: purify_neq(ctx.neq, r, ctx.subst),
+        sym: purify_sym(ctx.sym, r)
+    }
   end
 
-  def reify_neq(_subst, []), do: []
+  @spec purify_neq([Subst.t()], Subst.t(), Subst.t()) :: [Subst.t()]
+  def purify_neq(cs, r, subst) do
+    cs
+    |> Enum.map(fn c -> Subst.deep_walk(subst, Subst.to_pairs(c)) end)
+    |> Enum.reject(&Enum.empty?/1)
+    |> Enum.reject(fn c -> Subst.anyvar?(r, c) end)
+    |> Enum.map(fn c -> Subst.deep_walk(r, c) end)
+  end
 
-  def reify_neq(subst, cs) do
-    {:neq, Subst.deep_walk(subst, Subst.contraint_repr(cs))}
+  def purify_sym(vs, r) do
+    vs
+    |> Enum.reject(fn v -> Term.var?(Subst.walk(r, v)) end)
+    |> Enum.map(fn v -> Subst.walk(r, v) end)
   end
 
   @spec add_symbol_constraint(t, Var.t(), Term.t()) :: t() | nil
@@ -99,5 +110,14 @@ defmodule Ckini.Context do
       Term.var?(t) -> %{ctx | sym: MapSet.put(sym, v)}
       true -> nil
     end
+  end
+
+  @spec constraints(t()) :: keyword()
+  def constraints(ctx) do
+    [
+      neq: ctx.neq,
+      sym: ctx.sym
+    ]
+    |> Enum.reject(fn {_, v} -> Enum.empty?(v) end)
   end
 end

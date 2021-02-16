@@ -72,21 +72,13 @@ defmodule Ckini.Subst do
     end
   end
 
-  @spec relevant_vars(t(), [Var.t()]) :: [Var.t()]
-  def relevant_vars(_subs, []), do: []
-
-  def relevant_vars(subs, [v | vs]) do
-    new_vs = Term.all_vars(walk(subs, v)) -- [v]
-    [v | relevant_vars(subs, new_vs ++ vs)]
-  end
-
-  @spec filter_vars(t(), [Var.t()]) :: t()
-  def filter_vars(subs, vs) do
-    Enum.filter(
-      subs,
-      fn {v, _} -> Enum.any?(vs, &Var.eq?(&1, v)) end
-    )
-    |> Map.new()
+  @spec anyvar?(t(), Term.t()) :: boolean()
+  def anyvar?(sub, t) do
+    case t do
+      %Var{} = t -> Term.var?(walk(sub, t))
+      [h | t] -> anyvar?(sub, h) or anyvar?(sub, t)
+      _ -> false
+    end
   end
 
   @spec unify_list(t(), [Term.t()], [Term.t()]) :: nil | t()
@@ -166,8 +158,8 @@ defmodule Ckini.Subst do
     Enum.map(sub, fn {k, v} -> [k | v] end)
   end
 
-  def contraint_repr(subs) do
-    Enum.map(subs, &Enum.to_list/1)
+  def to_pairs(sub) do
+    Enum.to_list(sub)
   end
 
   @spec reify(t(), Term.t()) :: t()
