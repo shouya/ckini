@@ -5,8 +5,10 @@ defmodule Ckini.Term do
 
   @type t :: atom() | binary() | integer() | Var.t() | [t()]
 
+  defguard is_symbol(t) when is_atom(t)
+
   defguard is_basic(t)
-           when is_atom(t) or is_binary(t) or is_integer(t)
+           when is_symbol(t) or is_binary(t) or is_integer(t)
 
   def eq?(t1, t2) do
     cond do

@@ -1,16 +1,17 @@
 defmodule Ckini.Context do
   @moduledoc false
 
-  alias Ckini.{Subst, Term}
+  alias Ckini.{Subst, Term, Var}
 
   require Term
   require Subst
 
-  defstruct subst: Subst.new(), neq: []
+  defstruct subst: Subst.new(), neq: [], sym: MapSet.new()
 
   @type t :: %__MODULE__{
           subst: Subst.t(),
-          neq: [Subst.t()]
+          neq: [Subst.t()],
+          sym: MapSet.new(Var.t())
         }
 
   def new(subst \\ Subst.new(), neq \\ []) do
@@ -37,9 +38,12 @@ defmodule Ckini.Context do
 
   @spec verify(t()) :: t() | nil
   def verify(c) do
-    verify_neq(c)
+    c
+    |> verify_sym()
+    |> verify_neq()
   end
 
+  @spec verify_neq(t() | nil) :: t() | nil
   def verify_neq(%{neq: [], subst: _} = ctx), do: ctx
 
   def verify_neq(%{neq: [c | cs], subst: sub} = ctx) do
@@ -52,6 +56,22 @@ defmodule Ckini.Context do
           nil -> nil
           new_ctx -> %{new_ctx | neq: [new_c | new_ctx.neq]}
         end
+    end
+  end
+
+  @spec verify_sym(t() | nil) :: t() | nil
+  def verify_sym(nil), do: nil
+  def verify_sym(%{sym: []} = ctx), do: ctx
+
+  def verify_sym(%{subst: sub, sym: syms} = ctx) do
+    not_sym? = fn var ->
+      t = Subst.walk(sub, var)
+      not (Term.is_symbol(t) || Term.var?(t))
+    end
+
+    case Enum.find(syms, not_sym?) do
+      nil -> ctx
+      _ -> nil
     end
   end
 
@@ -69,5 +89,14 @@ defmodule Ckini.Context do
 
   def reify_neq(subst, cs) do
     {:neq, Subst.deep_walk(subst, Subst.contraint_repr(cs))}
+  end
+
+  @spec add_symbol_constraint(t, Var.t(), Term.t()) :: t() | nil
+  def add_symbol_constraint(%{sym: sym} = ctx, v, t) do
+    cond do
+      Term.is_symbol(t) -> %{ctx | sym: MapSet.delete(sym, v)}
+      Term.var?(t) -> %{ctx | sym: MapSet.put(sym, v)}
+      true -> nil
+    end
   end
 end

@@ -3,8 +3,10 @@ defmodule Ckini.Goals do
   This module defines generic goals and combinators like anyo.
   """
 
-  alias Ckini.{Stream, Subst, Var, Context}
   import Ckini
+
+  alias Ckini.{Stream, Subst, Var, Context, Term}
+  require Term
 
   @type goal :: Ckini.goal()
 
@@ -128,6 +130,17 @@ defmodule Ckini.Goals do
       subs = build_s(Subst.new(), t)
       eq(t2, Subst.deep_walk(subs, t))
     end)
+  end
+
+  def symbolo(v) do
+    fn c ->
+      t = Subst.walk(c.subst, v)
+
+      case Context.add_symbol_constraint(c, v, t) do
+        nil -> Stream.empty()
+        c -> Stream.singleton(c)
+      end
+    end
   end
 
   defp build_s(subs, t) do
