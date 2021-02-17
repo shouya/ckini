@@ -11,19 +11,20 @@ defmodule Ckini do
     end
   end
 
-  def run(vars, goals) do
+  def run_s(vars, goals) do
     stream_of_subst = to_goal(goals).(Context.new())
 
     stream_of_subst
     |> Stream.map(fn subst -> Term.reify(vars, subst) end)
+  end
+
+  def run(vars, goals) do
+    run_s(vars, goals)
     |> Stream.to_list()
   end
 
   def run(n, vars, goals) when is_integer(n) and n >= 0 do
-    stream_of_subst = to_goal(goals).(Context.new())
-
-    stream_of_subst
-    |> Stream.map(fn subst -> Term.reify(vars, subst) end)
+    run_s(vars, goals)
     |> Stream.take(n)
     |> Stream.to_list()
   end

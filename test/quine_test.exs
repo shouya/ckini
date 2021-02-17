@@ -12,9 +12,9 @@ defmodule QuineTest do
 
         [
           eq([:quote, v], exp),
-          eq(v, val),
           not_in_envo(:quote, env),
-          absento(v, :closure)
+          absento(v, :closure),
+          eq(v, val)
         ]
       end,
       fn ->
@@ -28,20 +28,21 @@ defmodule QuineTest do
         ]
       end,
       fn ->
-        [symbolo(exp), lookupo(exp, env, val)]
+        [
+          symbolo(exp),
+          absento(val, :closure),
+          lookupo(exp, env, val)
+        ]
       end,
       fn ->
         [rator, rand, x, body, env_n, a] = Var.new_many(6)
 
         [
           eq([rator, rand], exp),
+          absento(val, :closure),
           evalo(rator, env, [:closure, x, body, env_n]),
-          project({rator, rand}, fn {r, rr} ->
-            IO.puts(print([r, rr]))
-            succ()
-          end),
-          evalo(rand, env, a),
-          evalo(body, [[x | a] | env_n], val)
+          evalo(body, [[x | a] | env_n], val),
+          evalo(rand, env, a)
         ]
       end,
       fn ->
@@ -100,6 +101,21 @@ defmodule QuineTest do
     ])
   end
 
+  test "testing stuff" do
+    q = Var.new()
+
+    for p <- run(100, q, evalo(q, [], :a)) do
+      case p do
+        {t, _c} ->
+          IO.puts(print(t))
+
+        t ->
+          IO.puts(print(t))
+      end
+    end
+  end
+
+  @tag timeout: 60_000
   test "test existing quine" do
     q = Var.new()
     assert [1] = run(1, q, evalo(:x, [[:x | 1]], q))
@@ -109,10 +125,21 @@ defmodule QuineTest do
       [:quote, [:lambda, [:x], [:list, :x, [:list, [:quote, :quote], :x]]]]
     ]
 
+    assert [:_0] = run(q, evalo(quine, [], quine))
+  end
+
+  test "guided generation of quine" do
+    q = Var.new()
+
+    quine = [
+      [:lambda, [:x], [:list, :x, [:list, [:quote, :quote], :x]]],
+      [:quote, [:lambda, [:x], [:list, :x, [:list, [:quote, :quote], :x]]]]
+    ]
+
     assert [:_0] = run(q, evalo(q, [], quine))
   end
 
-  @tag timeout: 60_000
+  @tag timeout: 6_000
   test "quine generation" do
     q = Var.new()
 
@@ -125,13 +152,19 @@ defmodule QuineTest do
         ["'", print(v)]
 
       [:list | xs] ->
-        ["(", "list", Enum.map(xs, &print/1) |> Enum.join(" "), ")"]
+        ["(", "list", " ", Enum.map(xs, &print/1) |> Enum.join(" "), ")"]
+
+      [:lambda, [v], body] ->
+        ["(", "λ", " ", to_string(v), " . ", print(body), ")"]
 
       [rator, rand] ->
-        ["(", print(rator), " ", print(rand), ")"]
+        ["[", print(rator), " ", print(rand), "]"]
 
       %Var{} = v ->
         inspect(v)
+
+      xs when is_list(xs) ->
+        ["(", xs |> Enum.map(&print/1) |> Enum.join(" "), ")"]
 
       sym ->
         to_string(sym)

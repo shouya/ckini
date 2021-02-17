@@ -49,8 +49,8 @@ defmodule Ckini.Context do
   @spec verify(t()) :: t() | nil
   def verify(c) do
     c
-    |> verify_sym()
     |> verify_neq()
+    |> verify_sym()
     |> verify_abs()
   end
 
