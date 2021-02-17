@@ -9,14 +9,26 @@ defmodule QuineTest do
     condi([
       fn ->
         v = Var.new()
-        [eq([:quote, v], exp), eq(v, val)]
+
+        [
+          eq([:quote, v], exp),
+          eq(v, val),
+          not_in_envo(:quote, env),
+          absento(v, :closure)
+        ]
       end,
       fn ->
         xs = Var.new()
-        [eq([:list | xs], exp), proper_listo(xs, env, val)]
+
+        [
+          eq([:list | xs], exp),
+          not_in_envo(:list, env),
+          absento(xs, :closure),
+          proper_listo(xs, env, val)
+        ]
       end,
       fn ->
-        [varo(exp), lookupo(exp, env, val)]
+        [symbolo(exp), lookupo(exp, env, val)]
       end,
       fn ->
         [rator, rand, x, body, env_n, a] = Var.new_many(6)
@@ -24,7 +36,10 @@ defmodule QuineTest do
         [
           eq([rator, rand], exp),
           evalo(rator, env, [:closure, x, body, env_n]),
-          varo(x),
+          project({rator, rand}, fn {r, rr} ->
+            IO.puts(print([r, rr]))
+            succ()
+          end),
           evalo(rand, env, a),
           evalo(body, [[x | a] | env_n], val)
         ]
@@ -34,21 +49,22 @@ defmodule QuineTest do
 
         [
           eq([:lambda, [x], body], exp),
-          varo(x),
+          symbolo(x),
+          not_in_envo(:lambda, env),
           eq([:closure, x, body, env], val)
         ]
       end
     ])
   end
 
-  def proper_listo(exp, env, val) do
+  def proper_listo(xs, env, val) do
     condi([
-      fn -> [eq([], exp), eq([], val)] end,
+      fn -> [eq([], xs), eq([], val)] end,
       fn ->
         [a, d, ta, td] = Var.new_many(4)
 
         [
-          eq([a | d], exp),
+          eq([a | d], xs),
           eq([ta | td], val),
           evalo(a, env, ta),
           proper_listo(d, env, td)
@@ -69,21 +85,57 @@ defmodule QuineTest do
     ])
   end
 
-  def varo(v) do
-    condi([eq(v, :x), eq(v, :quote), eq(v, :list)])
+  def not_in_envo(x, env) do
+    condi([
+      fn ->
+        [y, v, rest] = Var.new_many(3)
+
+        [
+          eq(env, [[y | v] | rest]),
+          neq(y, x),
+          not_in_envo(x, rest)
+        ]
+      end,
+      fn -> eq(env, []) end
+    ])
   end
 
-  test "quine" do
+  test "test existing quine" do
     q = Var.new()
-    env = [[:list | :list], [:quote | :quote]]
-
     assert [1] = run(1, q, evalo(:x, [[:x | 1]], q))
 
     quine = [
-      [:lambda, [:x], [:list, :x, [:list, :quote, :x]]],
-      [:quote, [:lambda, [:x], [:list, :x, [:list, :quote, :x]]]]
+      [:lambda, [:x], [:list, :x, [:list, [:quote, :quote], :x]]],
+      [:quote, [:lambda, [:x], [:list, :x, [:list, [:quote, :quote], :x]]]]
     ]
 
-    assert [:_0] = run(q, evalo(quine, env, quine))
+    assert [:_0] = run(q, evalo(q, [], quine))
+  end
+
+  @tag timeout: 60_000
+  test "quine generation" do
+    q = Var.new()
+
+    assert [:_0] = run(1, q, evalo(q, [], q))
+  end
+
+  def print(exp) do
+    case exp do
+      [:quote, v] ->
+        ["'", print(v)]
+
+      [:list | xs] ->
+        ["(", "list", Enum.map(xs, &print/1) |> Enum.join(" "), ")"]
+
+      [rator, rand] ->
+        ["(", print(rator), " ", print(rand), ")"]
+
+      %Var{} = v ->
+        inspect(v)
+
+      sym ->
+        to_string(sym)
+    end
+    |> :erlang.iolist_to_binary()
   end
 end
