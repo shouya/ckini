@@ -43,15 +43,17 @@ defmodule Ckini.Term do
   @doc "test if term t contains term u with given substitution"
   def contains?(t, u, subst) do
     case Subst.walk(subst, t) do
-      xs when is_list(xs) -> Enum.any?(xs, &contains?(&1, u, subst))
+      [h | t] -> contains?(h, u, subst) or contains?(t, u, subst)
       t -> equal?(t, u, subst)
     end
   end
 
   @doc "check equality of two terms under given substitution"
   def equal?(t, u, subst) do
-    new_s = Subst.unify(subst, u, t)
-    is_nil(new_s) or Subst.empty?(new_s)
+    case Subst.unify(subst, u, t) do
+      nil -> false
+      s -> Subst.empty?(s)
+    end
   end
 
   @doc "Reify all variables in a term and its related constraints"

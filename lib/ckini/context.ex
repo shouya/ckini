@@ -89,7 +89,6 @@ defmodule Ckini.Context do
 
   @spec verify_abs(t() | nil) :: t() | nil
   def verify_abs(nil), do: nil
-  def verify_abs(%{abs: []} = ctx), do: ctx
 
   def verify_abs(%{abs: vs, subst: subst} = ctx) do
     case Enum.find(vs, fn {t, u} -> Term.contains?(t, u, subst) end) do
