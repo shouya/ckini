@@ -49,10 +49,15 @@ defmodule Ckini.Context do
   @spec verify(t()) :: t() | nil
   def verify(c) do
     c
+    |> verify_valid_subst()
     |> verify_neq()
     |> verify_sym()
     |> verify_abs()
   end
+
+  @spec verify_valid_subst(t()) :: nil
+  def verify_valid_subst(%{subst: nil}), do: nil
+  def verify_valid_subst(ctx), do: ctx
 
   @spec verify_neq(t() | nil) :: t() | nil
   def verify_neq(nil), do: nil

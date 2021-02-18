@@ -49,16 +49,25 @@ defmodule Ckini.Subst do
     %{var => val}
   end
 
-  @spec concat(t(), t()) :: t()
+  @spec concat(t(), t()) :: t() | nil
   def concat(s1, s2) do
-    Map.merge(s1, s2)
+    Enum.reduce(
+      s1,
+      s2,
+      fn
+        _, nil -> nil
+        {k, v}, acc -> insert(acc, k, v)
+      end
+    )
   end
 
   @spec assocs(t()) :: [{Var.t(), Term.t()}]
   def assocs(t), do: t
 
   # returns only extra associations
-  @spec unify(t(), Term.t(), Term.t()) :: nil | t()
+  @spec unify(t() | nil, Term.t(), Term.t()) :: nil | t()
+  def unify(nil, v, w), do: nil
+
   def unify(s, v, w) do
     vv = walk(s, v)
     ww = walk(s, w)
