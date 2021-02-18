@@ -100,6 +100,37 @@ defmodule Ckini.Stream do
     end
   end
 
+  @spec mplus(t(a), t(a)) :: t(a)
+  def mplus(nil, s2), do: s2
+  def mplus(f, s2) when is_thunk(f), do: fn -> mplus(f.(), s2) end
+  def mplus(%{car: x, cdr: xs}, s2), do: new(x, fn -> mplus(s2, xs) end)
+
+  @doc """
+  This mplus function is the same implementation used in condi in
+  other miniKanren implementations. It's generally more effective in
+  searching the state tree comparing to those that uses
+  interleave/concat. However, as you can see in the example below, the
+  search order is difficult keep track of.
+
+  You can use `condem` function to use this implementation.
+
+  iex> [
+  ...>   [0, 2, 4, 6],
+  ...>   [1, 5, 8],
+  ...>   [3, 9],
+  ...>   [7]
+  ...> ]
+  ...> |> Enum.map(&from_list/1)
+  ...> |> from_list()
+  ...> |> mplus_many()
+  ...> |> to_list()
+  [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+  """
+  @spec mplus_many(t(t(a))) :: t(a)
+  def mplus_many(nil), do: nil
+  def mplus_many(f) when is_thunk(f), do: fn -> mplus_many(f.()) end
+  def mplus_many(%{car: s, cdr: ss}), do: mplus(s, fn -> mplus_many(ss) end)
+
   @spec rotate1(t(a)) :: t(a)
   def rotate1(nil), do: nil
   def rotate1(f) when is_thunk(f), do: fn -> rotate1(f.()) end
@@ -117,7 +148,7 @@ defmodule Ckini.Stream do
   def bind_goal(f, g) when is_thunk(f), do: fn -> bind_goal(f.(), g) end
 
   def bind_goal(%{car: x, cdr: xs}, g) do
-    concat2(g.(x), bind_goal(xs, g))
+    fn -> mplus(g.(x), bind_goal(xs, g)) end
   end
 
   @spec bind_goals(t(Subst.t()), t(goal)) :: t(Subst.t())

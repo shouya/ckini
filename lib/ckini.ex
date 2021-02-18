@@ -56,6 +56,15 @@ defmodule Ckini do
     end
   end
 
+  def condem(goals) do
+    fn ctx ->
+      goals
+      |> to_goal_stream()
+      |> Stream.map(fn g -> g.(ctx) end)
+      |> Stream.mplus_many()
+    end
+  end
+
   def condi(goals) do
     fn ctx ->
       goals
