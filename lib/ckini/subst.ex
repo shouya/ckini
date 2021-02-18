@@ -66,7 +66,7 @@ defmodule Ckini.Subst do
 
   # returns only extra associations
   @spec unify(t() | nil, Term.t(), Term.t()) :: nil | t()
-  def unify(nil, v, w), do: nil
+  def unify(nil, _v, _w), do: nil
 
   def unify(s, v, w) do
     vv = walk(s, v)
