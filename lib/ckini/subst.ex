@@ -206,6 +206,10 @@ defmodule Ckini.Subst do
     end)
   end
 
+  # defp reify_name(0), do: :x
+  # defp reify_name(1), do: :y
+  # defp reify_name(2), do: :z
+
   defp reify_name(n) do
     :"_#{n}"
   end
