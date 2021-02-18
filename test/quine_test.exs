@@ -2,11 +2,8 @@ defmodule QuineTest do
   use ExUnit.Case
   use Ckini
 
-  # translated from
-  # https://github.com/webyrd/Barliman/blob/master/cocoa/Barliman/mk-and-rel-interp/mk/test-quines.scm
-
   def evalo(exp, env, val) do
-    condi([
+    condem([
       fn ->
         v = Var.new()
 
@@ -21,16 +18,15 @@ defmodule QuineTest do
         xs = Var.new()
 
         [
-          eq([:list | xs], exp),
           not_in_envo(:list, env),
           absento(xs, :closure),
+          eq([:list | xs], exp),
           proper_listo(xs, env, val)
         ]
       end,
       fn ->
         [
           symbolo(exp),
-          absento(val, :closure),
           lookupo(exp, env, val)
         ]
       end,
@@ -40,9 +36,9 @@ defmodule QuineTest do
         [
           eq([rator, rand], exp),
           absento(val, :closure),
-          evalo(rator, env, [:closure, x, body, env_n]),
-          evalo(body, [[x | a] | env_n], val),
-          evalo(rand, env, a)
+          fn -> evalo(rator, env, [:closure, x, body, env_n]) end,
+          fn -> evalo(rand, env, a) end,
+          fn -> evalo(body, [[x | a] | env_n], val) end
         ]
       end,
       fn ->
@@ -59,7 +55,7 @@ defmodule QuineTest do
   end
 
   def proper_listo(xs, env, val) do
-    condi([
+    condem([
       fn -> [eq([], xs), eq([], val)] end,
       fn ->
         [a, d, ta, td] = Var.new_many(4)
@@ -67,7 +63,7 @@ defmodule QuineTest do
         [
           eq([a | d], xs),
           eq([ta | td], val),
-          evalo(a, env, ta),
+          fn -> evalo(a, env, ta) end,
           proper_listo(d, env, td)
         ]
       end
@@ -79,7 +75,7 @@ defmodule QuineTest do
 
     all([
       eq([[y | v] | rest], env),
-      condi([
+      conde([
         fn -> [eq(y, x), eq(v, t)] end,
         fn -> [neq(y, x), lookupo(x, rest, t)] end
       ])
@@ -87,24 +83,25 @@ defmodule QuineTest do
   end
 
   def not_in_envo(x, env) do
-    condi([
+    conde([
       fn ->
         [y, v, rest] = Var.new_many(3)
 
         [
           eq(env, [[y | v] | rest]),
           neq(y, x),
-          not_in_envo(x, rest)
+          fn -> not_in_envo(x, rest) end
         ]
       end,
       fn -> eq(env, []) end
     ])
   end
 
+  @tag timeout: 60_000
   test "testing stuff" do
     q = Var.new()
 
-    for p <- run(100, q, evalo(q, [], :a)) do
+    for p <- run(10, q, evalo(q, [], q)) do
       case p do
         {t, _c} ->
           IO.puts(print(t))
@@ -115,7 +112,6 @@ defmodule QuineTest do
     end
   end
 
-  @tag timeout: 60_000
   test "test existing quine" do
     q = Var.new()
     assert [1] = run(1, q, evalo(:x, [[:x | 1]], q))
@@ -136,10 +132,24 @@ defmodule QuineTest do
       [:quote, [:lambda, [:x], [:list, :x, [:list, [:quote, :quote], :x]]]]
     ]
 
-    assert [:_0] = run(q, evalo(q, [], quine))
+    assert quine in run(200, q, evalo(q, [], quine))
   end
 
-  @tag timeout: 6_000
+  test "guided generation of quine - 2" do
+    q = Var.new()
+
+    quine = [
+      [:lambda, [:x], [:list, :x, [:list, [:quote, :quote], :x]]],
+      [:quote, [:lambda, [:x], [:list, :x, [:list, [:quote, :quote], :x]]]]
+    ]
+
+    [x, y, _z] = Var.new_many(3)
+
+    assert [quine] ==
+             run(1, q, [eq(q, [[:lambda, [:x], x], y]), evalo(q, [], q)])
+  end
+
+  @tag timeout: 600_000
   test "quine generation" do
     q = Var.new()
 

@@ -102,7 +102,8 @@ defmodule Ckini.Stream do
 
   @spec mplus(t(a), t(a)) :: t(a)
   def mplus(nil, s2), do: s2
-  def mplus(f, s2) when is_thunk(f), do: fn -> mplus(f.(), s2) end
+  def mplus(s1, nil), do: s1
+  def mplus(f, s2) when is_thunk(f), do: fn -> mplus(s2, f.()) end
   def mplus(%{car: x, cdr: xs}, s2), do: new(x, fn -> mplus(s2, xs) end)
 
   @doc """
@@ -115,10 +116,10 @@ defmodule Ckini.Stream do
   You can use `condem` function to use this implementation.
 
   iex> [
-  ...>   [0, 2, 4, 6],
-  ...>   [1, 5, 8],
-  ...>   [3, 9],
-  ...>   [7]
+  ...>   [0, 1, 3, 4],
+  ...>   [2, 5, 7],
+  ...>   [6, 8],
+  ...>   [9]
   ...> ]
   ...> |> Enum.map(&from_list/1)
   ...> |> from_list()
@@ -148,7 +149,7 @@ defmodule Ckini.Stream do
   def bind_goal(f, g) when is_thunk(f), do: fn -> bind_goal(f.(), g) end
 
   def bind_goal(%{car: x, cdr: xs}, g) do
-    fn -> mplus(g.(x), bind_goal(xs, g)) end
+    mplus(bind_goal(xs, g), g.(x))
   end
 
   @spec bind_goals(t(Subst.t()), t(goal)) :: t(Subst.t())
