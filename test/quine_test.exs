@@ -3,105 +3,83 @@ defmodule QuineTest do
   use Ckini
 
   def evalo(exp, env, val) do
-    condem([
-      fn ->
-        v = Var.new()
+    conde do
+      v ->
+        eq([:quote, v], exp)
+        not_in_envo(:quote, env)
+        absento(v, :closure)
+        eq(v, val)
 
-        [
-          eq([:quote, v], exp),
-          not_in_envo(:quote, env),
-          absento(v, :closure),
-          eq(v, val)
-        ]
-      end,
-      fn ->
-        xs = Var.new()
+      xs ->
+        eq([:list | xs], exp)
+        not_in_envo(:list, env)
+        absento(xs, :closure)
+        proper_listo(xs, env, val)
 
-        [
-          eq([:list | xs], exp),
-          not_in_envo(:list, env),
-          absento(xs, :closure),
-          proper_listo(xs, env, val)
-        ]
-      end,
-      fn ->
-        [
-          symbolo(exp),
-          lookupo(exp, env, val)
-        ]
-      end,
-      fn ->
-        [rator, rand, x, body, env_n, a] = Var.new_many(6)
+      _ ->
+        symbolo(exp)
+        lookupo(exp, env, val)
 
-        [
-          eq([rator, rand], exp),
-          fn -> evalo(rator, env, [:closure, x, body, env_n]) end,
-          fn -> evalo(rand, env, a) end,
-          fn -> evalo(body, [[x | a] | env_n], val) end
-        ]
-      end,
-      fn ->
-        [x, body] = Var.new_many(2)
+      [rator, rand, x, body, env_n, a] ->
+        eq([rator, rand], exp)
+        evalo(rator, env, [:closure, x, body, env_n])
+        evalo(rand, env, a)
+        evalo(body, [[x | a] | env_n], val)
 
-        [
-          eq([:lambda, [x], body], exp),
-          symbolo(x),
-          not_in_envo(:lambda, env),
-          eq([:closure, x, body, env], val)
-        ]
-      end
-    ])
+      [x, body] ->
+        eq([:lambda, [x], body], exp)
+        symbolo(x)
+        not_in_envo(:lambda, env)
+        eq([:closure, x, body, env], val)
+    end
   end
 
   def proper_listo(xs, env, val) do
-    condem([
-      fn -> [eq([], xs), eq([], val)] end,
-      fn ->
-        [a, d, ta, td] = Var.new_many(4)
+    conde do
+      _ ->
+        eq([], xs)
+        eq([], val)
 
-        [
-          eq([a | d], xs),
-          eq([ta | td], val),
-          fn -> evalo(a, env, ta) end,
-          proper_listo(d, env, td)
-        ]
-      end
-    ])
+      [a, d, ta, td] ->
+        eq([a | d], xs)
+        eq([ta | td], val)
+        evalo(a, env, ta)
+        proper_listo(d, env, td)
+    end
   end
 
   def lookupo(x, env, t) do
-    [y, v, rest] = Var.new_many(3)
+    fresh [y, v, rest] do
+      eq([[y | v] | rest], env)
 
-    all([
-      eq([[y | v] | rest], env),
-      conde([
-        fn -> [eq(y, x), eq(v, t)] end,
-        fn -> [neq(y, x), lookupo(x, rest, t)] end
-      ])
-    ])
+      conde do
+        _ ->
+          eq(y, x)
+          eq(v, t)
+
+        _ ->
+          neq(y, x)
+          lookupo(x, rest, t)
+      end
+    end
   end
 
   def not_in_envo(x, env) do
-    conde([
-      fn ->
-        [y, v, rest] = Var.new_many(3)
+    conde do
+      [y, v, rest] ->
+        eq(env, [[y | v] | rest])
+        neq(y, x)
+        not_in_envo(x, rest)
 
-        [
-          eq(env, [[y | v] | rest]),
-          neq(y, x),
-          fn -> not_in_envo(x, rest) end
-        ]
-      end,
-      fn -> eq(env, []) end
-    ])
+      _ ->
+        eq(env, [])
+    end
   end
 
-  @tag :skip
+  # @tag :skip
   @tag timeout: 600_000
   test "code for testing" do
-    [q] = Var.new_many(1)
-
-    for p <- run(2, q, evalo(q, [], q)) do
+    for p <- run(2, q, do: evalo(q, [], q)) do
       case p do
         {t, _c} ->
           IO.puts(print(t))
@@ -113,47 +91,46 @@ defmodule QuineTest do
   end
 
   test "test existing quine" do
-    q = Var.new()
-    assert [1] = run(1, q, evalo(:x, [[:x | 1]], q))
+    assert [1] = run(1, q, do: evalo(:x, [[:x | 1]], q))
 
     quine = [
       [:lambda, [:x], [:list, :x, [:list, [:quote, :quote], :x]]],
       [:quote, [:lambda, [:x], [:list, :x, [:list, [:quote, :quote], :x]]]]
     ]
 
-    assert [:_0] = run(q, evalo(quine, [], quine))
+    assert [:_0] = run(q, do: evalo(quine, [], quine))
   end
 
   test "guided generation of quine" do
-    q = Var.new()
-
     quine = [
       [:lambda, [:x], [:list, :x, [:list, [:quote, :quote], :x]]],
       [:quote, [:lambda, [:x], [:list, :x, [:list, [:quote, :quote], :x]]]]
     ]
 
-    assert [_ | _] = run(200, q, evalo(q, [], quine))
+    assert [_ | _] = run(200, q, do: evalo(q, [], quine))
   end
 
   test "guided generation of quine - 2" do
-    q = Var.new()
-
     quine = [
       [:lambda, [:x], [:list, :x, [:list, [:quote, :quote], :x]]],
       [:quote, [:lambda, [:x], [:list, :x, [:list, [:quote, :quote], :x]]]]
     ]
 
-    [x, y, _z] = Var.new_many(3)
+    result =
+      run(1, q) do
+        fresh [x, y] do
+          eq(q, [[:lambda, [:x], x], y])
+        end
 
-    assert [quine] ==
-             run(1, q, [eq(q, [[:lambda, [:x], x], y]), evalo(q, [], q)])
+        evalo(q, [], q)
+      end
+
+    assert [quine] == result
   end
 
   @tag timeout: 600_000
   test "quine generation" do
-    q = Var.new()
-
-    assert [_] = run(1, q, evalo(q, [], q))
+    assert [_] = run(1, q, do: evalo(q, [], q))
   end
 
   def print(exp) do

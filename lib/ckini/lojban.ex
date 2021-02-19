@@ -1,7 +1,7 @@
 defmodule Ckini.Lojban do
   @moduledoc false
 
-  use Ckini
+  use Ckini, style: :functional
 
   @ma Var.new(:ma)
 

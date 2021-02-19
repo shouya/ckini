@@ -3,8 +3,7 @@ defmodule Ckini.Goals do
   This module defines generic goals and combinators like anyo.
   """
 
-  import Ckini
-
+  import Ckini.Functional
   alias Ckini.{Stream, Subst, Var, Context, Term}
   require Term
 

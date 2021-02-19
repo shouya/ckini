@@ -11,7 +11,7 @@ defmodule Ckini.Arithmetic do
   I'll only translating the definition to Ckini.
   """
 
-  use Ckini
+  use Ckini, style: :functional
 
   require Integer
 
@@ -123,7 +123,14 @@ defmodule Ckini.Arithmetic do
       [eq([], m), eq([], p), poso(n)],
       [eq([1], n), eq(m, p), poso(m)],
       [eq([1], m), eq(n, p), gt1o(n)],
-      [eq([0 | x], n), eq([0 | z], p), poso(x), poso(z), gt1o(m), rec.(x, m, z)],
+      [
+        eq([0 | x], n),
+        eq([0 | z], p),
+        poso(x),
+        poso(z),
+        gt1o(m),
+        rec.(x, m, z)
+      ],
       [eq([1 | x], n), eq([0 | y], m), poso(x), poso(y), rec.(m, n, p)],
       [eq([1 | x], n), eq([1 | y], m), poso(x), poso(y), odd_m.(x, n, m, p)]
     ])
