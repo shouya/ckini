@@ -64,15 +64,9 @@ defmodule Ckini.Context do
   def verify_neq(%{neq: [], subst: _} = ctx), do: ctx
 
   def verify_neq(%{neq: [c | cs], subst: sub} = ctx) do
-    case Subst.verify_neq(sub, c) do
-      nil ->
-        nil
-
-      new_c ->
-        case verify_neq(%{ctx | neq: cs}) do
-          nil -> nil
-          new_ctx -> %{new_ctx | neq: [new_c | new_ctx.neq]}
-        end
+    with new_c when not is_nil(new_c) <- Subst.verify_neq(sub, c),
+         new_ctx when not is_nil(new_ctx) <- verify_neq(%{ctx | neq: cs}) do
+      %{new_ctx | neq: [new_c | new_ctx.neq]}
     end
   end
 
