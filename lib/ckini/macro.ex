@@ -2,7 +2,7 @@ defmodule Ckini.Macro do
   @moduledoc """
   MiniKanren-like interface using Macro.
 
-  Exports run/1, run/2, fresh/1, conde/1.
+  Exports run, fresh, conde, condi, conda, condu.
   """
 
   alias Ckini.{Stream, Context, Term}
@@ -53,19 +53,103 @@ defmodule Ckini.Macro do
   end
 
   defmacro conde(do: cases) do
-    clauses =
-      for {:->, _, [[vars], clause]} <- cases do
-        quote do
-          fn ->
-            unquote_splicing(generate_vars(vars))
-            all(do: unquote(clause)).(ctx)
-          end
-        end
+    clauses = cond_clauses_to_goals(cases)
+
+    quote do
+      fn ctx ->
+        Stream.concat(Stream.from_list(unquote(clauses)))
       end
+    end
+  end
+
+  defmacro condi(do: [{:->, _, [[_vars], _clause]}] = single) do
+    quote do
+      conde(do: unquote(single))
+    end
+  end
+
+  defmacro condi(do: cases) do
+    clauses = cond_clauses_to_goals(cases)
 
     quote do
       fn ctx ->
         Stream.mplus_many(Stream.from_list(unquote(clauses)))
+      end
+    end
+  end
+
+  defmacro conda(do: cases) do
+    cases = extract_cond_clauses(cases)
+
+    clauses =
+      for {vars, [goal | goals]} <- cases do
+        lhs =
+          quote do
+            unquote_splicing(generate_vars(vars))
+
+            {ctx, ctxs} =
+              case Stream.split(unquote(goal).(ctx)) do
+                nil -> {nil, nil}
+                {ctx, ctxs} -> {ctx, ctxs}
+              end
+
+            not is_nil(ctx)
+          end
+
+        ext_g =
+          quote do
+            fn _ -> Stream.cons(ctx, ctxs) end
+          end
+
+        rhs =
+          quote do
+            all(do: unquote(to_block([ext_g | goals]))).(ctx)
+          end
+
+        {:->, [], [[lhs], rhs]}
+      end
+
+    clauses = clauses ++ [{:->, [], [[true], quote(do: Stream.empty())]}]
+    cond_expr = {:cond, [], [[do: clauses]]}
+
+    quote location: :keep do
+      fn ctx ->
+        fn ->
+          unquote(cond_expr)
+        end
+      end
+    end
+  end
+
+  defmacro condu(do: cases) do
+    cases = extract_cond_clauses(cases)
+
+    clauses =
+      for {vars, [goal | goals]} <- cases do
+        lhs =
+          quote do
+            unquote_splicing(generate_vars(vars))
+            res = Stream.to_list(Stream.take(unquote(goal).(ctx), 1))
+            length(res) > 0
+          end
+
+        rhs =
+          quote do
+            [ctx] = res
+            all(do: unquote(to_block(goals))).(ctx)
+          end
+
+        {:->, [], [[lhs], rhs]}
+      end
+
+    clauses = clauses ++ [{:->, [], [[true], quote(do: Stream.empty())]}]
+    cond_expr = {:cond, [], [[do: clauses]]}
+
+    quote location: :keep do
+      fn ctx ->
+        fn ->
+          unquote(cond_expr)
+        end
       end
     end
   end
@@ -79,12 +163,14 @@ defmodule Ckini.Macro do
   defp bind_goals({:__block__, metadata, [g | gs]}) do
     quote do
       fn ctx ->
-        ctxs = unquote(g).(ctx)
-        goal = unquote(bind_goals({:__block__, metadata, gs}))
+        fn ->
+          ctxs = unquote(g).(ctx)
+          goal = unquote(bind_goals({:__block__, metadata, gs}))
 
-        ctxs
-        |> Stream.map(fn ctx -> goal.(ctx) end)
-        |> Stream.mplus_many()
+          ctxs
+          |> Stream.map(fn ctx -> goal.(ctx) end)
+          |> Stream.mplus_many()
+        end
       end
     end
   end
@@ -113,5 +199,44 @@ defmodule Ckini.Macro do
 
   defp generate_vars({name, _, _} = var) when is_atom(name) do
     generate_vars([var])
+  end
+
+  defp cond_clauses_to_goals(cases) do
+    for {vars, goals} <- extract_cond_clauses(cases) do
+      quote do
+        fn ->
+          unquote_splicing(generate_vars(vars))
+          all(do: unquote(to_block(goals))).(ctx)
+        end
+      end
+    end
+  end
+
+  defp to_block(xs) do
+    quote do
+      (unquote_splicing(xs))
+    end
+  end
+
+  defp extract_cond_clauses(cases) do
+    for {:->, _, [[vars], clause]} <- cases do
+      vars =
+        case vars do
+          [] -> []
+          {:{}, _, []} -> []
+          {:_, _, _} -> []
+          {name, _, _} = var when is_atom(name) -> [var]
+          vars when is_list(vars) -> vars
+        end
+
+      goals =
+        case clause do
+          {:__block__, _, []} -> []
+          {:__block__, _, goals} -> goals
+          goal -> [goal]
+        end
+
+      {vars, goals}
+    end
   end
 end

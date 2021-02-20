@@ -3,7 +3,7 @@ defmodule QuineTest do
   use Ckini
 
   def evalo(exp, env, val) do
-    conde do
+    condi do
       v ->
         eq([:quote, v], exp)
         not_in_envo(:quote, env)
@@ -35,7 +35,7 @@ defmodule QuineTest do
   end
 
   def proper_listo(xs, env, val) do
-    conde do
+    condi do
       _ ->
         eq([], xs)
         eq([], val)
@@ -52,7 +52,7 @@ defmodule QuineTest do
     fresh [y, v, rest] do
       eq([[y | v] | rest], env)
 
-      conde do
+      condi do
         _ ->
           eq(y, x)
           eq(v, t)
@@ -65,7 +65,7 @@ defmodule QuineTest do
   end
 
   def not_in_envo(x, env) do
-    conde do
+    condi do
       [y, v, rest] ->
         eq(env, [[y | v] | rest])
         neq(y, x)

@@ -3,7 +3,8 @@ defmodule Ckini.Goals do
   This module defines generic goals and combinators like anyo.
   """
 
-  import Ckini.Functional
+  import Ckini.Functional, only: [project: 2]
+  import Ckini.Macro
   alias Ckini.{Stream, Subst, Var, Context, Term}
   require Term
 
@@ -92,7 +93,10 @@ defmodule Ckini.Goals do
   [1, 1, 1, 1, 1]
   """
   def anyo(g) do
-    conde([g, fn -> anyo(g) end])
+    condi do
+      _ -> g
+      _ -> anyo(g)
+    end
   end
 
   @doc """
@@ -104,7 +108,9 @@ defmodule Ckini.Goals do
   [1]
   """
   def onceo(g) do
-    condu([[g]])
+    condu do
+      _ -> g
+    end
   end
 
   @doc """

@@ -178,6 +178,11 @@ defmodule Ckini.Stream do
     cons(x, fn -> take(xs, n - 1) end)
   end
 
+  @spec split(t(a)) :: {a, t(a)} | nil
+  def split(nil), do: nil
+  def split(f) when is_thunk(f), do: split(f.())
+  def split(%{car: x, cdr: xs}), do: {x, xs}
+
   def to_list(nil), do: []
   def to_list(f) when is_thunk(f), do: to_list(f.())
   def to_list(%{car: x, cdr: xs}), do: [x | to_list(xs)]

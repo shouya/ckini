@@ -4,12 +4,14 @@ defmodule MacroTest do
   use ExUnit.Case
 
   import Ckini.Macro
-  import Ckini.Goals
+  import Ckini.Goals, only: [eq: 2]
 
   defmacro debug_macro(do: body) do
     body
     |> Macro.prewalk(&Macro.expand(&1, __ENV__))
     |> Macro.to_string()
+    |> Code.format_string!()
+    |> :erlang.iolist_to_binary()
     |> IO.puts()
 
     body
@@ -18,13 +20,14 @@ defmodule MacroTest do
   test "foo" do
     goal =
       debug_macro do
-        run([q]) do
-          fresh({x}) do
-            eq(q, x)
-          end
+        run(2, x) do
+          conda do
+            z ->
+              eq(x, z)
 
-          fresh({x}) do
-            eq(x, 10)
+            [x, y] ->
+              eq(x, y)
+              eq(2, x)
           end
         end
       end
