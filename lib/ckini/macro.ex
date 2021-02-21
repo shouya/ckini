@@ -103,7 +103,7 @@ defmodule Ckini.Macro do
 
         rhs =
           quote do
-            all(do: unquote(to_block([ext_g | goals]))).(ctx)
+            unquote(bind_goals([ext_g | goals])).(ctx)
           end
 
         {:->, [], [[lhs], rhs]}
@@ -136,7 +136,7 @@ defmodule Ckini.Macro do
         rhs =
           quote do
             [ctx] = res
-            all(do: unquote(to_block(goals))).(ctx)
+            unquote(bind_goals(goals)).(ctx)
           end
 
         {:->, [], [[lhs], rhs]}
@@ -154,7 +154,19 @@ defmodule Ckini.Macro do
     end
   end
 
-  defmacro matchi(pattern, do: clauses) do
+  defmacro matche(pattern, do: clauses),
+    do: {:conde, [], [[do: match_to_cond_clause(pattern, clauses)]]}
+
+  defmacro matchi(pattern, do: clauses),
+    do: {:condi, [], [[do: match_to_cond_clause(pattern, clauses)]]}
+
+  defmacro matcha(pattern, do: clauses),
+    do: {:conda, [], [[do: match_to_cond_clause(pattern, clauses)]]}
+
+  defmacro matchu(pattern, do: clauses),
+    do: {:condu, [], [[do: match_to_cond_clause(pattern, clauses)]]}
+
+  defp match_to_cond_clause(pattern, clauses) do
     pivot_pattern = extract_patterns(pattern)
 
     clauses =
@@ -166,27 +178,21 @@ defmodule Ckini.Macro do
         end
       end
 
-    clauses = Enum.map(clauses, &hd/1)
-    {:condi, [], [[do: clauses]]}
+    Enum.map(clauses, &hd/1)
   end
 
   defp bind_goals([]) do
     quote do: &Stream.singleton/1
   end
 
-  defp bind_goals([g]), do: g
+  defp bind_goals([goal]), do: goal
 
-  defp bind_goals([g | gs]) do
-    quote do
+  defp bind_goals(goals) do
+    quote location: :keep, bind_quoted: [goals: goals] do
       fn ctx ->
-        fn ->
-          ctxs = unquote(g).(ctx)
-          goal = unquote(bind_goals(gs))
-
-          ctxs
-          |> Stream.map(fn ctx -> goal.(ctx) end)
-          |> Stream.mplus_many()
-        end
+        Enum.reduce(goals, Stream.singleton(ctx), fn goal, ctxs ->
+          Stream.mplus_many(Stream.map(ctxs, &goal.(&1)))
+        end)
       end
     end
   end
@@ -221,12 +227,6 @@ defmodule Ckini.Macro do
           unquote(bind_goals(goals)).(ctx)
         end
       end
-    end
-  end
-
-  defp to_block(xs) do
-    quote do
-      (unquote_splicing(xs))
     end
   end
 
