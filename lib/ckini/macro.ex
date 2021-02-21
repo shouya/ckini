@@ -103,7 +103,7 @@ defmodule Ckini.Macro do
 
         rhs =
           quote do
-            unquote(bind_goals([ext_g | goals])).(ctx)
+            unquote(bind_goals_on_ctx([ext_g | goals], quote(do: ctx)))
           end
 
         {:->, [], [[lhs], rhs]}
@@ -136,7 +136,7 @@ defmodule Ckini.Macro do
         rhs =
           quote do
             [ctx] = res
-            unquote(bind_goals(goals)).(ctx)
+            unquote(bind_goals_on_ctx(goals, quote(do: ctx)))
           end
 
         {:->, [], [[lhs], rhs]}
@@ -197,6 +197,29 @@ defmodule Ckini.Macro do
     end
   end
 
+  defp bind_goals_on_ctx([], ctx) do
+    quote do: Stream.singleton(unquote(ctx))
+  end
+
+  defp bind_goals_on_ctx([goal], ctx) do
+    quote do: unquote(goal).unquote(ctx)
+  end
+
+  defp bind_goals_on_ctx(goals, ctx) do
+    quote location: :keep, bind_quoted: [goals: goals, ctx: ctx] do
+      Enum.reduce(goals, Stream.singleton(ctx), fn goal, ctxs ->
+        Stream.mplus_many(Stream.map(ctxs, &goal.(&1)))
+      end)
+    end
+
+    quote location: :keep do
+      Enum.reduce(unquote(goals), Stream.singleton(unquote(ctx)), fn goal,
+                                                                     ctxs ->
+        Stream.mplus_many(Stream.map(ctxs, &goal.(&1)))
+      end)
+    end
+  end
+
   defp generate_vars(vars) when is_list(vars) do
     for {name, _, _} = var when is_atom(name) <- vars do
       quote do: unquote(var) = Ckini.Var.new(unquote(name))
@@ -224,7 +247,7 @@ defmodule Ckini.Macro do
       quote do
         fn ->
           unquote_splicing(generate_vars(vars))
-          unquote(bind_goals(goals)).(ctx)
+          unquote(bind_goals_on_ctx(goals, quote(do: ctx)))
         end
       end
     end
