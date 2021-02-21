@@ -40,7 +40,7 @@ defmodule Ckini.Macro do
   end
 
   defmacro all(do: goals) do
-    bind_goals(goals)
+    bind_goals(extract_goals(goals))
   end
 
   defmacro conde(do: [{:->, _, [[vars], clause]}]) do
@@ -154,18 +154,34 @@ defmodule Ckini.Macro do
     end
   end
 
-  defp bind_goals({:__block__, _, []}) do
+  defmacro matchi(pattern, do: clauses) do
+    pivot_pattern = extract_patterns(pattern)
+
+    clauses =
+      for {pats, vars, goals} <- extract_match_clauses(clauses) do
+        quote location: :keep do
+          unquote(vars) ->
+            eq(unquote(pivot_pattern), unquote(pats))
+            unquote_splicing(goals)
+        end
+      end
+
+    clauses = Enum.map(clauses, &hd/1)
+    {:condi, [], [[do: clauses]]}
+  end
+
+  defp bind_goals([]) do
     quote do: &Stream.singleton/1
   end
 
-  defp bind_goals({:__block__, _, [g]}), do: g
+  defp bind_goals([g]), do: g
 
-  defp bind_goals({:__block__, metadata, [g | gs]}) do
+  defp bind_goals([g | gs]) do
     quote do
       fn ctx ->
         fn ->
           ctxs = unquote(g).(ctx)
-          goal = unquote(bind_goals({:__block__, metadata, gs}))
+          goal = unquote(bind_goals(gs))
 
           ctxs
           |> Stream.map(fn ctx -> goal.(ctx) end)
@@ -173,10 +189,6 @@ defmodule Ckini.Macro do
         end
       end
     end
-  end
-
-  defp bind_goals(single) do
-    bind_goals({:__block__, [], [single]})
   end
 
   defp generate_vars(vars) when is_list(vars) do
@@ -206,7 +218,7 @@ defmodule Ckini.Macro do
       quote do
         fn ->
           unquote_splicing(generate_vars(vars))
-          all(do: unquote(to_block(goals))).(ctx)
+          unquote(bind_goals(goals)).(ctx)
         end
       end
     end
@@ -218,25 +230,77 @@ defmodule Ckini.Macro do
     end
   end
 
+  defp extract_match_clauses(cases) do
+    for {:->, _, [lhs, clause]} <- cases do
+      {patterns, vars} =
+        case lhs do
+          [patterns] -> {patterns, []}
+          [patterns, vars] -> {patterns, vars}
+        end
+
+      patterns =
+        patterns
+        |> extract_patterns()
+        |> Enum.map(&normalize_pattern/1)
+
+      vars = extract_vars(vars) ++ all_vars_in_pattern(patterns)
+      goals = extract_goals(clause)
+
+      {patterns, vars, goals}
+    end
+  end
+
+  defp all_vars_in_pattern(pattern) do
+    case pattern do
+      {:{}, _, xs} -> Enum.flat_map(xs, &all_vars_in_pattern/1)
+      xs when is_list(xs) -> Enum.flat_map(xs, &all_vars_in_pattern/1)
+      {name, _, _} = var when is_atom(name) -> [var]
+      _ -> []
+    end
+  end
+
+  def normalize_pattern(pattern) do
+    case pattern do
+      xs when is_list(xs) -> Enum.map(xs, &normalize_pattern/1)
+      {:_, _, ctx} -> Macro.unique_var(:anon, ctx)
+      {name, _, _} = var when is_atom(name) -> var
+      val -> val
+    end
+  end
+
   defp extract_cond_clauses(cases) do
     for {:->, _, [[vars], clause]} <- cases do
-      vars =
-        case vars do
-          [] -> []
-          {:{}, _, []} -> []
-          {:_, _, _} -> []
-          {name, _, _} = var when is_atom(name) -> [var]
-          vars when is_list(vars) -> vars
-        end
-
-      goals =
-        case clause do
-          {:__block__, _, []} -> []
-          {:__block__, _, goals} -> goals
-          goal -> [goal]
-        end
-
+      vars = extract_vars(vars)
+      goals = extract_goals(clause)
       {vars, goals}
+    end
+  end
+
+  defp extract_vars(vars) do
+    case vars do
+      [] -> []
+      {:{}, _, []} -> []
+      {var1, var2} -> [var1, var2]
+      {:_, _, _} -> []
+      {name, _, _} = var when is_atom(name) -> [var]
+      vars when is_list(vars) -> vars
+    end
+  end
+
+  defp extract_patterns(patterns) do
+    case patterns do
+      {:{}, _, pats} -> pats
+      {pat1, pat2} -> [pat1, pat2]
+      pats when is_list(pats) -> pats
+      pat -> [pat]
+    end
+  end
+
+  defp extract_goals(clause) do
+    case clause do
+      {:__block__, _, []} -> []
+      {:__block__, _, goals} -> goals
+      goal -> [goal]
     end
   end
 end

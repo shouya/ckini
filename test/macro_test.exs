@@ -20,18 +20,18 @@ defmodule MacroTest do
   test "foo" do
     goal =
       debug_macro do
-        run(2, x) do
-          conda do
-            z ->
-              eq(x, z)
+        run(2, y) do
+          fresh x do
+            eq(x, [1, 2])
 
-            [x, y] ->
-              eq(x, y)
-              eq(2, x)
+            matchi {x, 1} do
+              {_, z} -> eq(y, z)
+              {_, 2} -> eq(y, 1)
+            end
           end
         end
       end
 
-    assert 2 == goal
+    assert [2, 1] == goal
   end
 end
