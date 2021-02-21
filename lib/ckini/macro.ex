@@ -188,11 +188,9 @@ defmodule Ckini.Macro do
   defp bind_goals([goal]), do: goal
 
   defp bind_goals(goals) do
-    quote location: :keep, bind_quoted: [goals: goals] do
+    quote location: :keep do
       fn ctx ->
-        Enum.reduce(goals, Stream.singleton(ctx), fn goal, ctxs ->
-          Stream.mplus_many(Stream.map(ctxs, &goal.(&1)))
-        end)
+        unquote(bind_goals_on_ctx(goals, quote(do: ctx)))
       end
     end
   end
@@ -202,19 +200,12 @@ defmodule Ckini.Macro do
   end
 
   defp bind_goals_on_ctx([goal], ctx) do
-    quote do: unquote(goal).unquote(ctx)
+    quote do: unquote(goal).(unquote(ctx))
   end
 
   defp bind_goals_on_ctx(goals, ctx) do
     quote location: :keep, bind_quoted: [goals: goals, ctx: ctx] do
       Enum.reduce(goals, Stream.singleton(ctx), fn goal, ctxs ->
-        Stream.mplus_many(Stream.map(ctxs, &goal.(&1)))
-      end)
-    end
-
-    quote location: :keep do
-      Enum.reduce(unquote(goals), Stream.singleton(unquote(ctx)), fn goal,
-                                                                     ctxs ->
         Stream.mplus_many(Stream.map(ctxs, &goal.(&1)))
       end)
     end
