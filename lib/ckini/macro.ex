@@ -7,6 +7,26 @@ defmodule Ckini.Macro do
 
   alias Ckini.{Stream, Context, Term}
 
+  @doc """
+  Fresh introduces new logic variables into the block scoped by do..end.
+
+  Please note: with Ckini, you can minimize usage of `fresh` if you
+  intend to use it immediately in a cond* and match* clause, as cond*
+  and match* support introducing free variables via the left-hand-side
+  of `->`.
+
+  See `condi/1` and `matchi/2` for details.
+
+  ## Example
+
+  iex> use Ckini
+  iex> run q do
+  ...>   fresh x do
+  ...>     eq([x, q], [q, 1])
+  ...>   end
+  ...> end
+  [1]
+  """
   defmacro fresh(vars, do: goals) do
     quote do
       unquote_splicing(generate_vars(vars))
