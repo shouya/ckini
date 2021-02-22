@@ -303,7 +303,7 @@ defmodule Ckini.Macro do
   end
 
   defp extract_cond_clauses(cases) do
-    for {:->, _, [[vars], clause]} <- cases do
+    for {:->, _, [vars, clause]} <- cases do
       vars = extract_vars(vars)
       goals = extract_goals(clause)
       {vars, goals}
@@ -312,12 +312,11 @@ defmodule Ckini.Macro do
 
   defp extract_vars(vars) do
     case vars do
-      [] -> []
-      {:{}, _, []} -> []
+      {:{}, _, vars} -> Enum.flat_map(vars, &extract_vars/1)
+      vars when is_list(vars) -> Enum.flat_map(vars, &extract_vars/1)
       {var1, var2} -> [var1, var2]
       {:_, _, _} -> []
       {name, _, _} = var when is_atom(name) -> [var]
-      vars when is_list(vars) -> vars
     end
   end
 

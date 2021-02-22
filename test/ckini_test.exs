@@ -3,7 +3,7 @@ defmodule CkiniTest do
   doctest Ckini, import: true
   doctest Ckini.Stream, import: true
   doctest Ckini.Goals, import: true
-  doctest Ckini.Arithmetic, import: true
+  # doctest Ckini.Arithmetic, import: true
 
   use Ckini
 
@@ -11,21 +11,21 @@ defmodule CkiniTest do
     use Ckini
 
     def readme_demo do
-      x = Var.new()
-      y = Var.new()
-      z = Var.new()
-
-      run({x, y, z}, [
+      run({x, y, z}) do
         # simple goal
-        eq(y, 1),
+        eq(y, 1)
         # a conde goal
-        conde([eq(y, 2), eq(z, 3), eq(x, 4)]),
+        conde do
+          _ -> eq(y, 2)
+          _ -> eq(z, 3)
+          _ -> eq(x, 4)
+        end
+
         # you can create logic variable any time
-        fn ->
-          t = Var.new()
+        fresh t do
           eq(x, [y, z, t, "hello"])
         end
-      ])
+      end
     end
   end
 
@@ -34,9 +34,7 @@ defmodule CkiniTest do
   end
 
   test "listo" do
-    v = Var.new()
-
-    assert run(6, v, listo(v)) == [
+    assert run(6, v, do: listo(v)) == [
              [],
              [:_0],
              [:_0, :_1],
@@ -47,84 +45,82 @@ defmodule CkiniTest do
   end
 
   def listo(l) do
-    x = Var.new()
-    xs = Var.new()
+    conde do
+      _ ->
+        eq(l, [])
 
-    conde([
-      eq(l, []),
-      fn -> [eq([x | xs], l), listo(xs)] end
-    ])
+      [x, xs] ->
+        eq([x | xs], l)
+        listo(xs)
+    end
   end
 
   @tag timeout: 1000
   test "appendo" do
-    x = Var.new(:x)
-    y = Var.new(:y)
-
-    assert run({x, y}, appendo(x, y, [1, 2, 3, 4])) == [
+    assert run({x, y}, do: appendo(x, y, [1, 2, 3, 4])) == [
              {[], [1, 2, 3, 4]},
              {[1], [2, 3, 4]},
              {[1, 2], [3, 4]},
              {[1, 2, 3], [4]},
              {[1, 2, 3, 4], []}
            ]
-
-    assert run({x, y}, appendo2(x, y, [1, 2, 3, 4])) ==
-             run({x, y}, appendo(x, y, [1, 2, 3, 4]))
   end
 
   def appendo(l, s, out) do
-    conde([
-      [eq(l, []), eq(s, out)],
-      fn ->
-        a = Var.new(:a)
-        d = Var.new(:d)
+    conde do
+      _ ->
+        eq(l, [])
+        eq(s, out)
 
-        [
-          eq([a | d], l),
-          fn ->
-            res = Var.new(:res)
-            [eq([a | res], out), appendo(d, s, res)]
-          end
-        ]
-      end
-    ])
-  end
-
-  def appendo2(l, s, out) do
-    a = Var.new(:a)
-    d = Var.new(:d)
-    res = Var.new(:res)
-
-    conde([
-      [eq(l, []), eq(s, out)],
-      [eq([a | res], out), eq([a | d], l), fn -> appendo2(d, s, res) end]
-    ])
+      {a, d, res} ->
+        eq([a | d], l)
+        eq([a | res], out)
+        appendo(d, s, res)
+    end
   end
 
   test "condi and conde" do
     teacupo = fn v ->
-      conde([eq(v, :tea), eq(v, :cup)])
+      conde do
+        _ -> eq(v, :tea)
+        _ -> eq(v, :cup)
+      end
     end
 
-    x = Var.new()
-
     # condi will interleave the goals
-    assert run(x, condi([teacupo.(x), eq(x, 0)])) == [:tea, 0, :cup]
+    result =
+      run(x) do
+        condi do
+          _ -> teacupo.(x)
+          _ -> eq(x, 0)
+        end
+      end
+
+    assert result == [:tea, 0, :cup]
 
     # conde will perform depth-first search
-    assert run(x, conde([teacupo.(x), eq(x, 0)])) == [:tea, :cup, 0]
+    result =
+      run(x) do
+        conde do
+          _ -> teacupo.(x)
+          _ -> eq(x, 0)
+        end
+      end
+
+    assert result == [:tea, :cup, 0]
   end
 
   test "project" do
-    q = Var.new()
-
     # example from TRS
-    assert run(q, [
-             eq(q, false),
-             project(q, fn q ->
-               eq(not (not q), q)
-             end)
-           ]) == [false]
+    result =
+      run(q) do
+        eq(q, false)
+
+        Ckini.Functional.project(q, fn q ->
+          eq(not (not q), q)
+        end)
+      end
+
+    assert result == [false]
   end
 end

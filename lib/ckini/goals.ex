@@ -14,8 +14,10 @@ defmodule Ckini.Goals do
   succ is a goal that always succeeds.
 
   iex> use Ckini
-  iex> x = Var.new()
-  iex> run(x, [succ(), eq(x, 1)])
+  iex> run(x) do
+  ...>   succ()
+  ...>   eq(x, 1)
+  ...> end
   [1]
   """
   @spec succ :: goal()
@@ -27,8 +29,16 @@ defmodule Ckini.Goals do
   succ is a goal that always succeeds.
 
   iex> use Ckini
-  iex> x = Var.new()
-  iex> run(x, conde([[fail(), eq(x, 1)], [succ(), eq(x, 2)]]))
+  iex> run(x) do
+  ...>   conde do
+  ...>     _ ->
+  ...>        fail()
+  ...>        eq(x, 1)
+  ...>     _ ->
+  ...>        succ()
+  ...>        eq(x, 2)
+  ...>   end
+  ...> end
   [2]
   """
   @spec fail :: goal()
@@ -40,10 +50,9 @@ defmodule Ckini.Goals do
   eq is the same as the `===` operator in TRS and other miniKanren literature.
 
   iex> use Ckini
-  iex> x = Var.new()
-  iex> run(x, eq(3, x))
+  iex> run(x, do: eq(3, x))
   [3]
-  iex> run(x, eq([x], x))
+  iex> run(x, do: eq([x], x))
   []
   """
   @spec eq(Term.t(), Term.t()) :: goal()
@@ -60,19 +69,38 @@ defmodule Ckini.Goals do
   The `=/=` operator.
 
   iex> use Ckini
-  iex> x = Var.new()
-  iex> run(x, [neq(3, x), eq(x, 3)])
+  iex> run(x) do
+  ...>   neq(3, x)
+  ...>   eq(x, 3)
+  ...> end
   []
-  iex> run(x, [eq(3, x), neq(x, 3)])
+  iex> run(x) do
+  ...>   eq(3, x)
+  ...>   neq(x, 3)
+  ...> end
   []
-  iex> run(x, [eq(4, x), neq(x, 3)])
+  iex> run(x) do
+  ...>   eq(4, x)
+  ...>   neq(x, 3)
+  ...> end
   [4]
-  iex> [y,z] = Var.new_many(2)
-  iex> run(x, [neq(x, [y,z]), eq(y, 999), eq(z, 998)])
+  iex> [y, z] = Var.new_many(2)
+  iex> run(x) do
+  ...>   neq(x, [y,z])
+  ...>   eq(y, 999)
+  ...>   eq(z, 998)
+  ...> end
   [{:_0, [neq: [[_0: [999, 998]]]]}]
-  iex> run(x, [neq(x, [:hello, :world]), neq(x, :hello)])
+  iex> run(x) do
+  ...>   neq(x, [:hello, :world])
+  ...>   neq(x, :hello)
+  ...> end
   [{:_0, [neq: [[_0: :hello], [_0: [:hello, :world]]]]}]
-  iex> run(x, [neq(x, [y,z]), neq(x, :hello), eq(x, [1,2,3])])
+  iex> run(x) do
+  ...>   neq(x, [y,z])
+  ...>   neq(x, :hello)
+  ...>   eq(x, [1,2,3])
+  ...> end
   [[1,2,3]]
   """
   def neq(v, w) do
@@ -87,9 +115,8 @@ defmodule Ckini.Goals do
   @doc """
   Anyo runs the goal for indefinitely number of times.
 
-  iex> import Ckini
-  iex> x = Ckini.Var.new()
-  iex> run(5, x, anyo(eq(x, 1)))
+  iex> use Ckini
+  iex> run(5, x, do: anyo(eq(x, 1)))
   [1, 1, 1, 1, 1]
   """
   def anyo(g) do
@@ -102,9 +129,8 @@ defmodule Ckini.Goals do
   @doc """
   onceo succeeds at most once.
 
-  iex> import Ckini
-  iex> x = Ckini.Var.new()
-  iex> run(x, onceo(anyo(eq(x, 1))))
+  iex> use Ckini
+  iex> run(x, do: onceo(anyo(eq(x, 1))))
   [1]
   """
   def onceo(g) do
@@ -118,11 +144,11 @@ defmodule Ckini.Goals do
   variables with new variables.
 
   iex> use Ckini
-  iex> [w, x, y, z] = Var.new_many(4)
-  iex> run({w, z}, [
-  ...>   eq([:a, x, 5, y, x], w),
+  iex> [x, y] = Var.new_many(2)
+  iex> run({w, z}) do
+  ...>   eq([:a, x, 5, y, x], w)
   ...>   copy_termo(w, z)
-  ...> ])
+  ...> end
   [{[:a, :_0, 5, :_1, :_0],
     [:a, :_2, 5, :_3, :_2]}]
   """
@@ -137,15 +163,30 @@ defmodule Ckini.Goals do
   Assert a variable to be a symbol.
 
   iex> use Ckini
-  iex> q = Var.new()
-  iex> run(q, [eq(q, :hello), symbolo(q)])
+  iex> run(q) do
+  ...>   eq(q, :hello)
+  ...>   symbolo(q)
+  ...> end
   [:hello]
-  iex> run(q, [eq(q, []), symbolo(q)])
+  iex> run(q) do
+  ...>   eq(q, [])
+  ...>   symbolo(q)
+  ...> end
   []
-  iex> run(q, [symbolo(q), conde([eq(q, 1), eq(q, :a), eq(q, [])])])
+  iex> run(q) do
+  ...>   symbolo(q)
+  ...>   conde do
+  ...>     _ -> eq(q, 1)
+  ...>     _ -> eq(q, :a)
+  ...>     _ -> eq(q, [])
+  ...>   end
+  ...> end
   [:a]
   iex> v = Var.new()
-  iex> run(q, [symbolo(q), symbolo(v)])
+  iex> run q do
+  ...>   symbolo(q)
+  ...>   symbolo(v)
+  ...> end
   [{:_0, sym: [:_0]}]
   """
   @spec symbolo(Term.t()) :: goal()
@@ -164,12 +205,17 @@ defmodule Ckini.Goals do
   Assert term t never contains term u.
 
   iex> use Ckini
-  iex> q = Var.new()
-  iex> run(q, absento(q, 42))
+  iex> run(q, do: absento(q, 42))
   [{:_0, [abs: [_0: 42]]}]
-  iex> run(q, [eq(q, 42), absento(q, 42)])
+  iex> run(q) do
+  ...>   eq(q, 42)
+  ...>   absento(q, 42)
+  ...> end
   []
-  iex> run(q, [eq(q, [:the, :answer, :is, [42]]), absento(q, 42)])
+  iex> run(q) do
+  ...>   eq(q, [:the, :answer, :is, [42]])
+  ...>   absento(q, 42)
+  ...> end
   []
   """
   @spec absento(Term.t(), Term.t()) :: goal()

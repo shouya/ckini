@@ -32,6 +32,6 @@ defmodule MacroTest do
         end
       end
 
-    assert [2, 1] == goal
+    assert [1] == goal
   end
 end
