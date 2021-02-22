@@ -9,241 +9,238 @@ defmodule QueenTest do
   def lengtho(l, 0), do: eq(l, [])
 
   def lengtho(l, n) when n > 0 do
-    [x, xs] = Var.new_many(2)
-
-    all([
-      eq([x | xs], l),
-      fn -> lengtho(xs, n - 1) end
-    ])
+    fresh [x, xs] do
+      eq([x | xs], l)
+      lengtho(xs, n - 1)
+    end
   end
 
   def lengtho(_, _), do: fail()
 
   def cello(c) do
-    conde([eq(c, 0), eq(c, 1)])
+    condi do
+      _ -> eq(c, 0)
+      _ -> eq(c, 1)
+    end
   end
 
   def eacho(predo, l) do
-    conde([
-      fn -> eq([], l) end,
-      fn ->
-        [x, xs] = Var.new_many(2)
-        [eq([x | xs], l), predo.(x), fn -> eacho(predo, xs) end]
-      end
-    ])
+    condi do
+      _ ->
+        eq([], l)
+
+      [x, xs] ->
+        eq([x | xs], l)
+        predo.(x)
+        eacho(predo, xs)
+    end
   end
 
   def lineo(l) do
-    all([lengtho(l, @n), eacho(&cello/1, l)])
+    all do
+      lengtho(l, @n)
+      eacho(&cello/1, l)
+    end
   end
 
   def boardo(b) do
-    all([lengtho(b, @n), eacho(&lineo/1, b)])
+    all do
+      lengtho(b, @n)
+      eacho(&lineo/1, b)
+    end
   end
 
   def single_queeno(l) do
-    xs = Var.new()
+    condi do
+      xs ->
+        eq([1 | xs], l)
+        all_zero_lineo(xs)
 
-    condi([
-      fn -> [eq([1 | xs], l), all_zero_lineo(xs)] end,
-      fn -> [eq([0 | xs], l), single_queeno(xs)] end
-    ])
+      xs ->
+        eq([0 | xs], l)
+        single_queeno(xs)
+    end
   end
 
   def at_most_one_queeno(l) do
-    xs = Var.new()
+    condi do
+      _ ->
+        eq([], l)
 
-    condi([
-      fn -> eq([], l) end,
-      fn -> [eq([1 | xs], l), all_zero_lineo(xs)] end,
-      fn -> [eq([0 | xs], l), at_most_one_queeno(xs)] end
-    ])
+      xs ->
+        eq([1 | xs], l)
+        all_zero_lineo(xs)
+
+      xs ->
+        eq([0 | xs], l)
+        at_most_one_queeno(xs)
+    end
   end
 
   defp all_zero_lineo(l) do
-    conde([
-      fn -> eq(l, []) end,
-      fn ->
-        [x, xs] = Var.new_many(2)
-        [eq([x | xs], l), eq(x, 0), all_zero_lineo(xs)]
-      end
-    ])
+    condi do
+      _ ->
+        eq(l, [])
+
+      [x, xs] ->
+        eq([x | xs], l)
+        eq(x, 0)
+        all_zero_lineo(xs)
+    end
   end
 
   def valid_boardo(b) do
-    all([
-      boardo(b),
-      eacho(&single_queeno/1, b),
-      valid_colso(b),
-      fn ->
-        ls = Var.new()
+    fresh {bb, ls1, ls2} do
+      boardo(b)
+      eacho(&single_queeno/1, b)
+      valid_colso(b)
 
-        [
-          all_diagonalo(b, ls),
-          eacho(&at_most_one_queeno/1, ls)
-        ]
-      end,
-      fn ->
-        [bb, ls] = Var.new_many(2)
+      all_diagonalo(b, ls1)
+      eacho(&at_most_one_queeno/1, ls1)
 
-        [
-          reverseo(b, bb),
-          all_diagonalo(bb, ls),
-          eacho(&at_most_one_queeno/1, ls)
-        ]
-      end
-    ])
+      reverseo(b, bb)
+      all_diagonalo(bb, ls2)
+      eacho(&at_most_one_queeno/1, ls2)
+    end
   end
 
   def valid_colso(b) do
-    b_cols = Var.new()
-    [transposeo(b, b_cols), eacho(&single_queeno/1, b_cols)]
+    fresh b_cols do
+      transposeo(b, b_cols)
+      eacho(&single_queeno/1, b_cols)
+    end
   end
 
   def all_diagonalo(b, ls) do
-    [b_trans, ls1, ls2] = Var.new_many(3)
-
-    all([
-      bottom_left_diagonalo(b, ls1),
-      appendo(ls1, ls2, ls),
-      transposeo(b, [Var.new() | b_trans]),
+    fresh {b_trans, ls1, ls2, tmp} do
+      bottom_left_diagonalo(b, ls1)
+      appendo(ls1, ls2, ls)
+      transposeo(b, [tmp | b_trans])
       bottom_left_diagonalo(b_trans, ls2)
-    ])
+    end
   end
 
   def bottom_left_diagonalo(b, ls) do
-    conde([
-      fn -> [eq([Var.new()], b), eq([], ls)] end,
-      fn ->
-        [bh, bt, lsh, lst] = Var.new_many(4)
+    condi do
+      tmp ->
+        eq([tmp], b)
+        eq([], ls)
 
-        [
-          eq([bh | bt], b),
-          eq([lsh | lst], ls),
-          diagonalo(b, lsh),
-          bottom_left_diagonalo(bt, lst)
-        ]
-      end
-    ])
+      [bh, bt, lsh, lst] ->
+        eq([bh | bt], b)
+        eq([lsh | lst], ls)
+        diagonalo(b, lsh)
+        bottom_left_diagonalo(bt, lst)
+    end
   end
 
   def diagonalo(b, l) do
-    conde([
-      fn -> [eq([], b), eq([], l)] end,
-      fn ->
-        [r1, x, btl, btltl, ltl] = Var.new_many(5)
+    condi do
+      _ ->
+        eq([], b)
+        eq([], l)
 
-        [
-          eq([r1 | btl], b),
-          eq([x | Var.new()], r1),
-          eq([x | ltl], l),
-          mapo(&tlo/2, btl, btltl),
-          diagonalo(btltl, ltl)
-        ]
-      end
-    ])
+      [r1, x, btl, btltl, ltl, tmp] ->
+        eq([r1 | btl], b)
+        eq([x | tmp], r1)
+        eq([x | ltl], l)
+        mapo(&tlo/2, btl, btltl)
+        diagonalo(btltl, ltl)
+    end
   end
 
   def reverseo(l1, l2) do
-    conde([
-      fn -> [eq(l1, []), eq(l2, [])] end,
-      fn ->
-        [x, xs, r] = Var.new_many(3)
+    condi do
+      _ ->
+        eq(l1, [])
+        eq(l2, [])
 
-        [
-          eq(l1, [x | xs]),
-          reverseo(xs, r),
-          appendo(r, [x], l2)
-        ]
-      end
-    ])
+      [x, xs, r] ->
+        eq(l1, [x | xs])
+        reverseo(xs, r)
+        appendo(r, [x], l2)
+    end
   end
 
   def transposeo(l1, l2) do
-    conde([
-      fn -> [eq(l1, [[] | Var.new()]), eq(l2, [])] end,
-      fn ->
-        l1tl = Var.new()
-        l2hd = Var.new()
-        l2tl = Var.new()
+    condi do
+      tmp ->
+        eq(l1, [[] | tmp])
+        eq(l2, [])
 
-        [
-          eq([l2hd | l2tl], l2),
-          mapo(&hdo/2, l1, l2hd),
-          mapo(&tlo/2, l1, l1tl),
-          transposeo(l1tl, l2tl)
-        ]
-      end
-    ])
+      [l1tl, l2hd, l2tl] ->
+        eq([l2hd | l2tl], l2)
+        mapo(&hdo/2, l1, l2hd)
+        mapo(&tlo/2, l1, l1tl)
+        transposeo(l1tl, l2tl)
+    end
   end
 
   def mapo(fo, l1, l2) do
-    conde([
-      fn -> [eq(l1, []), eq(l2, [])] end,
-      fn ->
-        [x, xs, y, ys] = Var.new_many(4)
+    condi do
+      _ ->
+        eq(l1, [])
+        eq(l2, [])
 
-        [
-          eq(l1, [x | xs]),
-          eq(l2, [y | ys]),
-          fo.(x, y),
-          mapo(fo, xs, ys)
-        ]
-      end
-    ])
+      [x, xs, y, ys] ->
+        eq(l1, [x | xs])
+        eq(l2, [y | ys])
+        fo.(x, y)
+        mapo(fo, xs, ys)
+    end
   end
 
-  def hdo(l, x), do: eq(l, [x | Var.new()])
-  def tlo(l, xs), do: eq(l, [Var.new() | xs])
+  def hdo(l, x) do
+    fresh(tmp, do: eq(l, [x | tmp]))
+  end
+
+  def tlo(l, xs) do
+    fresh(tmp, do: eq(l, [tmp | xs]))
+  end
 
   def appendo(x, y, o) do
-    [xh, xt, ot] = Var.new_many(3)
+    condi do
+      _ ->
+        eq(x, [])
+        eq(y, o)
 
-    conde([
-      fn -> [eq(x, []), eq(y, o)] end,
-      fn -> [eq(x, [xh | xt]), eq([xh | ot], o), appendo(xt, y, ot)] end
-    ])
+      [xh, xt, ot] ->
+        eq(x, [xh | xt])
+        eq([xh | ot], o)
+        appendo(xt, y, ot)
+    end
   end
 
   test "lengtho works correctly" do
-    p = Var.new()
-    assert [[:_0, :_1, :_2]] == run(p, lengtho(p, 3))
+    assert [[:_0, :_1, :_2]] == run(p, do: lengtho(p, 3))
   end
 
   test "lineo works correctly" do
-    p = Var.new()
-
-    for line <- run(20, p, lineo(p)) do
+    for line <- run(20, p, do: lineo(p)) do
       assert length(line) == @n
     end
   end
 
   test "single_queeno works correctly" do
-    p = Var.new()
-
-    for line <- run(20, p, single_queeno(p)) do
+    for line <- run(20, p, do: single_queeno(p)) do
       assert 1 == Enum.reduce(line, &(&1 + &2))
     end
   end
 
   test "transposeo works correctly" do
-    p = Var.new()
-
     assert [[[1, 4], [2, 5 | :_0], [3, 6 | :_1]]] =
-             run(p, transposeo(p, [[1, 2, 3], [4, 5, 6]]))
+             run(p, do: transposeo(p, [[1, 2, 3], [4, 5, 6]]))
   end
 
   test "reverseo works" do
-    p = Var.new()
-    assert [[4, 3, 2, 1]] == run(p, reverseo([1, 2, 3, 4], p))
+    assert [[4, 3, 2, 1]] == run(p, do: reverseo([1, 2, 3, 4], p))
   end
 
+  # it runs for about 30 seconds to get the result for n=4 :(
   @tag :skip
   @tag timeout: 600_000
   test "valid_boardo works correctly" do
-    p = Var.new()
-
-    assert [_, _] = run(10, p, valid_boardo(p))
+    assert [_, _] = run(10, p, do: valid_boardo(p))
   end
 
   def print_board(board) do
