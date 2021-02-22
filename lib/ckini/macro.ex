@@ -231,26 +231,10 @@ defmodule Ckini.Macro do
     end
   end
 
-  defp generate_vars(vars) when is_list(vars) do
-    for {name, _, _} = var when is_atom(name) <- vars do
+  defp generate_vars(vars) do
+    for {name, _, _} = var <- extract_vars(vars) do
       quote do: unquote(var) = Ckini.Var.new(unquote(name))
     end
-  end
-
-  defp generate_vars({{_, ctx, _} = var1, var2}) do
-    generate_vars({:{}, ctx, [var1, var2]})
-  end
-
-  defp generate_vars({:{}, _, vars}) do
-    generate_vars(vars)
-  end
-
-  defp generate_vars({:_, _, _}) do
-    []
-  end
-
-  defp generate_vars({name, _, _} = var) when is_atom(name) do
-    generate_vars([var])
   end
 
   defp cond_clauses_to_goals(cases) do
@@ -265,13 +249,7 @@ defmodule Ckini.Macro do
   end
 
   defp extract_match_clauses(cases) do
-    for {:->, _, [lhs, clause]} <- cases do
-      {patterns, vars} =
-        case lhs do
-          [patterns] -> {patterns, []}
-          [patterns, vars] -> {patterns, vars}
-        end
-
+    for {:->, _, [[patterns | vars], clause]} <- cases do
       patterns =
         patterns
         |> extract_patterns()
