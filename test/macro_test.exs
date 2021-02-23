@@ -4,7 +4,7 @@ defmodule MacroTest do
   use ExUnit.Case
 
   import Ckini.Macro
-  import Ckini.Goals, only: [eq: 2]
+  import Ckini.Goals, only: [eq: 2, succ: 0]
 
   defmacro debug_macro(do: body) do
     body
@@ -20,15 +20,8 @@ defmodule MacroTest do
   test "foo" do
     goal =
       debug_macro do
-        run(2, y) do
-          fresh x do
-            eq(x, [1, 2])
-
-            matchi [x, 1] do
-              [_, z] -> eq(y, z)
-              [_, 2] -> eq(y, 1)
-            end
-          end
+        run(x) do
+          eq(x, 1)
         end
       end
 

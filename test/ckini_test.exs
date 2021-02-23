@@ -3,6 +3,7 @@ defmodule CkiniTest do
   doctest Ckini, import: true
   doctest Ckini.Stream, import: true
   doctest Ckini.Goals, import: true
+  doctest Ckini.Macro, import: true
   # doctest Ckini.Arithmetic, import: true
 
   use Ckini

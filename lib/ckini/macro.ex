@@ -269,6 +269,8 @@ defmodule Ckini.Macro do
   ...>   end
   ...> end
   []
+
+  Also see `conde/1`, `condi/1`, `condu/1`, `matcha/2`.
   """
   defmacro conda(do: cases) do
     cases = extract_cond_clauses(cases)
@@ -328,7 +330,7 @@ defmodule Ckini.Macro do
   ...>   end
   ...> end
   iex> run({x, y}) do
-  ...>   conda do
+  ...>   condu do
   ...>     _ ->
   ...>       teacupo.(x)
   ...>       eq(y, x)
@@ -357,6 +359,8 @@ defmodule Ckini.Macro do
   ...>   end
   ...> end
   []
+
+  Also see `conde/1`, `condi/1`, `conda/1`, `matchu/2`.
   """
   defmacro condu(do: cases) do
     cases = extract_cond_clauses(cases)
@@ -390,6 +394,37 @@ defmodule Ckini.Macro do
       end
     end
   end
+
+  @doc """
+  The match{e,i,a,u} series syntax are equivalent to their
+  cond{e,i,a,u} counterpart. They are handy to write pattern matching
+  with a value (or another pattern) against multiple patterns.
+
+  The pattern can be a variable, a list, or a ground term. The
+  do...end block contains a series of clauses of `pattern -> goals`
+  syntax.
+
+  You can use variables freely in the pattern, as they will be
+  introduced automatically. You can also use `_` in the pattern as
+  placeholder to ignore values you don't need.
+
+  If you need extra variables other than those appeared in `pattern`,
+  you can use `pattern, extra_variables -> goals` syntax. You can use
+  `{}` to enclose multiple variables as in `fresh/1`.
+
+  ## Examples
+
+  iex> use Ckini
+  iex> run(x) do
+  ...>   matche x do
+  ...>     _ -> succ()
+  ...>     [y, _] -> eq(y, 1)
+  ...>     [_, y] -> eq(y, 2)
+  ...>     [_, _] -> succ()
+  ...>   end
+  ...> end
+  [:_0, [1, :_0], [:_0, 2], [:_0, :_1]]
+  """
 
   defmacro matche(pattern, do: clauses),
     do: {:conde, [], [[do: match_to_cond_clause(pattern, clauses)]]}
@@ -474,7 +509,7 @@ defmodule Ckini.Macro do
       pattern =
         pattern
         |> extract_pattern()
-        |> Enum.map(&normalize_pattern/1)
+        |> normalize_pattern()
 
       vars =
         case vars do
@@ -500,11 +535,19 @@ defmodule Ckini.Macro do
   @spec normalize_pattern(Macro.t()) :: Macro.t()
   defp normalize_pattern(pattern) do
     case pattern do
-      xs when is_list(xs) -> Enum.map(xs, &normalize_pattern/1)
+      xs when is_list(xs) ->
+        Enum.map(xs, &normalize_pattern/1)
+
       # multiple :_ can appear in pattern but they are not the same
-      {:_, _, ctx} -> Macro.unique_var(:anon, ctx)
-      {name, _, _} = var when is_atom(name) -> var
-      val -> val
+      {:_, _, ctx} ->
+        id = System.unique_integer([:positive, :monotonic])
+        Macro.unique_var(:"anon_#{id}", ctx)
+
+      {name, _, _} = var when is_atom(name) ->
+        var
+
+      val ->
+        val
     end
   end
 
