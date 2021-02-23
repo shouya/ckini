@@ -8,7 +8,8 @@ defmodule Ckini.Macro do
   alias Ckini.{Stream, Context, Term}
 
   @doc """
-  Fresh introduces new logic variables into the block scoped by do..end.
+  Fresh introduces new logic variables into the block scoped by do..end. You can
+  put the variables in a tuple to introduce many variables at the same time.
 
   Please note: with Ckini, you can minimize usage of `fresh` if you
   intend to use it immediately in a cond* and match* clause, as cond*
@@ -26,17 +27,28 @@ defmodule Ckini.Macro do
   ...>   end
   ...> end
   [1]
+  iex> run q do
+  ...>   fresh {x, y} do
+  ...>     eq([x, y, q], [y, 1, x])
+  ...>   end
+  ...> end
+  [1]
   """
   defmacro fresh(vars, do: goals) do
     quote do
-      unquote_splicing(generate_vars(vars))
+      unquote_splicing(generate_vars(extract_vars(vars)))
       all(do: unquote(goals))
     end
   end
 
+  @doc """
+
+  """
   defmacro run(vars, do: goals) do
+    all_vars = extract_vars(vars)
+
     quote do
-      unquote_splicing(generate_vars(vars))
+      unquote_splicing(generate_vars(all_vars))
       goal = all(do: unquote(goals))
 
       goal
@@ -47,8 +59,10 @@ defmodule Ckini.Macro do
   end
 
   defmacro run(n, vars, do: goals) do
+    all_vars = extract_vars(vars)
+
     quote do
-      unquote_splicing(generate_vars(vars))
+      unquote_splicing(generate_vars(all_vars))
       goal = all(do: unquote(goals))
 
       goal
@@ -187,13 +201,13 @@ defmodule Ckini.Macro do
     do: {:condu, [], [[do: match_to_cond_clause(pattern, clauses)]]}
 
   defp match_to_cond_clause(pattern, clauses) do
-    pivot_pattern = extract_patterns(pattern)
+    pivot_pattern = extract_pattern(pattern)
 
     clauses =
-      for {pats, vars, goals} <- extract_match_clauses(clauses) do
+      for {pat, vars, goals} <- extract_match_clauses(clauses) do
         quote location: :keep do
-          unquote(vars) ->
-            eq(unquote(pivot_pattern), unquote(pats))
+          {unquote_splicing(vars)} ->
+            eq(unquote(pivot_pattern), unquote(pat))
             unquote_splicing(goals)
         end
       end
@@ -232,7 +246,7 @@ defmodule Ckini.Macro do
   end
 
   defp generate_vars(vars) do
-    for {name, _, _} = var <- extract_vars(vars) do
+    for {name, _, _} = var <- vars do
       quote do: unquote(var) = Ckini.Var.new(unquote(name))
     end
   end
@@ -249,31 +263,38 @@ defmodule Ckini.Macro do
   end
 
   defp extract_match_clauses(cases) do
-    for {:->, _, [[patterns | vars], clause]} <- cases do
-      patterns =
-        patterns
-        |> extract_patterns()
+    for {:->, _, [[pattern | vars], clause]} <- cases do
+      pattern =
+        pattern
+        |> extract_pattern()
         |> Enum.map(&normalize_pattern/1)
 
-      vars = extract_vars(vars) ++ all_vars_in_pattern(patterns)
+      vars =
+        case vars do
+          [] -> all_vars_in_pattern(pattern)
+          [vars] -> extract_vars(vars) ++ all_vars_in_pattern(pattern)
+          _ -> raise "Use {var1, var2, ...} to introduce multiple variables"
+        end
+
       goals = extract_goals(clause)
 
-      {patterns, vars, goals}
+      {pattern, vars, goals}
     end
   end
 
   defp all_vars_in_pattern(pattern) do
     case pattern do
-      {:{}, _, xs} -> Enum.flat_map(xs, &all_vars_in_pattern/1)
       xs when is_list(xs) -> Enum.flat_map(xs, &all_vars_in_pattern/1)
       {name, _, _} = var when is_atom(name) -> [var]
       _ -> []
     end
   end
 
-  def normalize_pattern(pattern) do
+  @spec normalize_pattern(Macro.t()) :: Macro.t()
+  defp normalize_pattern(pattern) do
     case pattern do
       xs when is_list(xs) -> Enum.map(xs, &normalize_pattern/1)
+      # multiple :_ can appear in pattern but they are not the same
       {:_, _, ctx} -> Macro.unique_var(:anon, ctx)
       {name, _, _} = var when is_atom(name) -> var
       val -> val
@@ -281,7 +302,7 @@ defmodule Ckini.Macro do
   end
 
   defp extract_cond_clauses(cases) do
-    for {:->, _, [vars, clause]} <- cases do
+    for {:->, _, [[vars], clause]} <- cases do
       vars = extract_vars(vars)
       goals = extract_goals(clause)
       {vars, goals}
@@ -290,21 +311,15 @@ defmodule Ckini.Macro do
 
   defp extract_vars(vars) do
     case vars do
-      {:{}, _, vars} -> Enum.flat_map(vars, &extract_vars/1)
-      vars when is_list(vars) -> Enum.flat_map(vars, &extract_vars/1)
-      {var1, var2} -> [var1, var2]
       {:_, _, _} -> []
+      {:{}, _, vars} -> vars
+      {var1, var2} -> [var1, var2]
       {name, _, _} = var when is_atom(name) -> [var]
     end
   end
 
-  defp extract_patterns(patterns) do
-    case patterns do
-      {:{}, _, pats} -> pats
-      {pat1, pat2} -> [pat1, pat2]
-      pats when is_list(pats) -> pats
-      pat -> [pat]
-    end
+  defp extract_pattern(pattern) do
+    pattern
   end
 
   defp extract_goals(clause) do

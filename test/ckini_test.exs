@@ -49,7 +49,7 @@ defmodule CkiniTest do
       _ ->
         eq(l, [])
 
-      [x, xs] ->
+      {x, xs} ->
         eq([x | xs], l)
         listo(xs)
     end

@@ -20,13 +20,13 @@ defmodule QuineTest do
         symbolo(exp)
         lookupo(exp, env, val)
 
-      [rator, rand, x, body, env_n, a] ->
+      {rator, rand, x, body, env_n, a} ->
         eq([rator, rand], exp)
         evalo(rator, env, [:closure, x, body, env_n])
         evalo(rand, env, a)
         evalo(body, [[x | a] | env_n], val)
 
-      [x, body] ->
+      {x, body} ->
         eq([:lambda, [x], body], exp)
         symbolo(x)
         not_in_envo(:lambda, env)
@@ -40,7 +40,7 @@ defmodule QuineTest do
         eq([], xs)
         eq([], val)
 
-      [a, d, ta, td] ->
+      {a, d, ta, td} ->
         eq([a | d], xs)
         eq([ta | td], val)
         evalo(a, env, ta)
@@ -49,7 +49,7 @@ defmodule QuineTest do
   end
 
   def lookupo(x, env, t) do
-    fresh [y, v, rest] do
+    fresh {y, v, rest} do
       eq([[y | v] | rest], env)
 
       condi do
@@ -66,7 +66,7 @@ defmodule QuineTest do
 
   def not_in_envo(x, env) do
     condi do
-      [y, v, rest] ->
+      {y, v, rest} ->
         eq(env, [[y | v] | rest])
         neq(y, x)
         not_in_envo(x, rest)
@@ -118,7 +118,7 @@ defmodule QuineTest do
 
     result =
       run(1, q) do
-        fresh [x, y] do
+        fresh {x, y} do
           eq(q, [[:lambda, [:x], x], y])
         end
 

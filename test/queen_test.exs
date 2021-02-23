@@ -9,7 +9,7 @@ defmodule QueenTest do
   def lengtho(l, 0), do: eq(l, [])
 
   def lengtho(l, n) when n > 0 do
-    fresh [x, xs] do
+    fresh {x, xs} do
       eq([x | xs], l)
       lengtho(xs, n - 1)
     end
@@ -29,7 +29,7 @@ defmodule QueenTest do
       _ ->
         eq([], l)
 
-      [x, xs] ->
+      {x, xs} ->
         eq([x | xs], l)
         predo.(x)
         eacho(predo, xs)
@@ -82,7 +82,7 @@ defmodule QueenTest do
       _ ->
         eq(l, [])
 
-      [x, xs] ->
+      {x, xs} ->
         eq([x | xs], l)
         eq(x, 0)
         all_zero_lineo(xs)
@@ -126,7 +126,7 @@ defmodule QueenTest do
         eq([tmp], b)
         eq([], ls)
 
-      [bh, bt, lsh, lst] ->
+      {bh, bt, lsh, lst} ->
         eq([bh | bt], b)
         eq([lsh | lst], ls)
         diagonalo(b, lsh)
@@ -140,7 +140,7 @@ defmodule QueenTest do
         eq([], b)
         eq([], l)
 
-      [r1, x, btl, btltl, ltl, tmp] ->
+      {r1, x, btl, btltl, ltl, tmp} ->
         eq([r1 | btl], b)
         eq([x | tmp], r1)
         eq([x | ltl], l)
@@ -155,7 +155,7 @@ defmodule QueenTest do
         eq(l1, [])
         eq(l2, [])
 
-      [x, xs, r] ->
+      {x, xs, r} ->
         eq(l1, [x | xs])
         reverseo(xs, r)
         appendo(r, [x], l2)
@@ -168,7 +168,7 @@ defmodule QueenTest do
         eq(l1, [[] | tmp])
         eq(l2, [])
 
-      [l1tl, l2hd, l2tl] ->
+      {l1tl, l2hd, l2tl} ->
         eq([l2hd | l2tl], l2)
         mapo(&hdo/2, l1, l2hd)
         mapo(&tlo/2, l1, l1tl)
@@ -182,7 +182,7 @@ defmodule QueenTest do
         eq(l1, [])
         eq(l2, [])
 
-      [x, xs, y, ys] ->
+      {x, xs, y, ys} ->
         eq(l1, [x | xs])
         eq(l2, [y | ys])
         fo.(x, y)
@@ -204,7 +204,7 @@ defmodule QueenTest do
         eq(x, [])
         eq(y, o)
 
-      [xh, xt, ot] ->
+      {xh, xt, ot} ->
         eq(x, [xh | xt])
         eq([xh | ot], o)
         appendo(xt, y, ot)

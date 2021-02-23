@@ -24,9 +24,9 @@ defmodule MacroTest do
           fresh x do
             eq(x, [1, 2])
 
-            matchi {x, 1} do
-              {_, z} -> eq(y, z)
-              {_, 2} -> eq(y, 1)
+            matchi [x, 1] do
+              [_, z] -> eq(y, z)
+              [_, 2] -> eq(y, 1)
             end
           end
         end
