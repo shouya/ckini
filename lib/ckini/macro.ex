@@ -18,7 +18,7 @@ defmodule Ckini.Macro do
 
   See `condi/1` and `matchi/2` for details.
 
-  ## Example
+  ## Examples
 
   iex> use Ckini
   iex> run q do
@@ -33,6 +33,8 @@ defmodule Ckini.Macro do
   ...>   end
   ...> end
   [1]
+
+  Also see `all/1`.
   """
   defmacro fresh(vars, do: goals) do
     quote do
@@ -42,7 +44,30 @@ defmodule Ckini.Macro do
   end
 
   @doc """
+  Query for all possible values of a variable with a goal.
 
+  You can also query multiple variables by putting them in a tuple. The variable
+  will be declared automatically.
+
+  You can also provide multiple goals by putting them in the do block.
+
+  ## Examples
+
+  iex> use Ckini
+  iex> run q do
+  ...> end
+  [:_0]
+  iex> run {x, y} do
+  ...>   eq(x, 1)
+  ...>   conde do
+  ...>     _ -> eq(y, 1)
+  ...>     _ -> eq(y, 2)
+  ...>     _ -> eq(x, 2)
+  ...>   end
+  ...> end
+  [{1, 1}, {1, 2}]
+
+  Also see `run/3` for limited of possible values.
   """
   defmacro run(vars, do: goals) do
     all_vars = extract_vars(vars)
@@ -58,6 +83,29 @@ defmodule Ckini.Macro do
     end
   end
 
+  @doc """
+  Query for a number of possible values of a variable with a goal.
+
+  You can also query multiple variables by putting them in a tuple. The variable
+  will be declared automatically.
+
+  You can also provide multiple goals by putting them in the do block.
+
+  ## Examples
+
+  iex> use Ckini
+  iex> run(2, q) do
+  ...>   conde do
+  ...>     _ -> eq(q, 1)
+  ...>     _ -> eq(q, 2)
+  ...>     _ -> eq(q, 3)
+  ...>     _ -> eq(q, 4)
+  ...>   end
+  ...> end
+  [1, 2]
+
+  Also see `run/2` that allows querying unlimited possible values.
+  """
   defmacro run(n, vars, do: goals) do
     all_vars = extract_vars(vars)
 
@@ -73,19 +121,63 @@ defmodule Ckini.Macro do
     end
   end
 
+  @doc """
+  Create a goal from a sequence of goals. The goal only succeeds when all the
+  subgoals succeed.
+
+  `all/1` is functionally equivalent to `fresh/1` except that it doesn't
+  introduce variables.
+
+  ## Examples
+
+  iex> use Ckini
+  iex> run(x) do
+  ...>   eq(x, 1)
+  ...>   all do
+  ...>     eq(x, 2)
+  ...>     eq(x, 1)
+  ...>   end
+  ...> end
+  []
+
+  The preceding example is only for demonstration. The usage of
+  `all/1` in the example is not necessary.
+  """
   defmacro all(do: goals) do
     bind_goals(extract_goals(goals))
   end
 
-  defmacro conde(do: [{:->, _, [[vars], clause]}]) do
-    quote do
-      fn ctx ->
-        unquote_splicing(generate_vars(vars))
-        all(do: unquote(clause)).(ctx)
-      end
-    end
-  end
+  @doc """
+  Create a goal from a sequence of subgoals by taking disjunction on them.
+  In other words, this syntax creates multiple possibilities.
 
+  Conde performs depth-first search. Which means, conde will explore
+  all possibilities of the first subgoal before exploring the second
+  subgoal, and so on.
+
+  Each subgoal is represented by a `->` expression in the do block.
+
+  The left-hand side of `->` can be used to introduce new
+  variables. You can put a single variable, or multiple variables
+  enclosed by `{}`, or if no new variable is needed, put an `_`.
+
+  The right-hand side of `->` can a single goal or multiple goals. If
+  multiple goals are supplied, they will be treated as if they are
+  enclosed in a `all/1` goal.
+
+  ## Examples
+
+  iex> use Ckini
+  iex> run(x) do
+  ...>   conde do
+  ...>     _ -> eq(x, 2)
+  ...>     _ -> eq(x, 1)
+  ...>   end
+  ...> end
+  [2, 1]
+
+  Also see `condi/1`, `conda/1`, `condu/1`, `matche/2`.
+  """
   defmacro conde(do: cases) do
     clauses = cond_clauses_to_goals(cases)
 
@@ -96,12 +188,30 @@ defmodule Ckini.Macro do
     end
   end
 
-  defmacro condi(do: [{:->, _, [[_vars], _clause]}] = single) do
-    quote do
-      conde(do: unquote(single))
-    end
-  end
+  @doc """
+  Create a goal from a sequence of subgoals by taking disjunction on them.
+  In other words, this syntax creates multiple possibilities.
 
+  Unlike `conde/1`, `condi/1` performs a different type of search
+  that's different from depth-first search. It will explore both
+  breadth and depth in a zig-zag order, making it more useful for
+  many cases.
+
+  The syntax is the same as `conde/1`. See `conde/1` for usage.
+
+  ## Examples
+
+  iex> use Ckini
+  iex> run(x) do
+  ...>   condi do
+  ...>     _ -> eq(x, 2)
+  ...>     _ -> eq(x, 1)
+  ...>   end
+  ...> end
+  [2, 1]
+
+  Also see `conde/1`, `conda/1`, `condu/1`, `matchi/2`.
+  """
   defmacro condi(do: cases) do
     clauses = cond_clauses_to_goals(cases)
 
@@ -112,6 +222,54 @@ defmodule Ckini.Macro do
     end
   end
 
+  @doc """
+  `conda/1` performs what's called a "soft-cut" operation in
+  Prolog. In each of its subgoals, if they are composed of multiple
+  goals and the first goal succeeds. `conda/1` will behave like the subgoal
+  is the only branch.
+
+  The syntax is the same as `conde/1`. See `conde/1` for usage.
+
+  ## Examples
+
+  iex> use Ckini
+  iex> teacupo = fn x ->
+  ...>   conde do
+  ...>     _ -> eq(x, :tea)
+  ...>     _ -> eq(x, :cup)
+  ...>   end
+  ...> end
+  iex> run({x, y}) do
+  ...>   conda do
+  ...>     _ ->
+  ...>       teacupo.(x)
+  ...>       eq(y, x)
+  ...>     _ ->
+  ...>       eq(x, 1)
+  ...>       eq(y, x)
+  ...>   end
+  ...> end
+  [{:tea, :tea}, {:cup, :cup}]
+
+  iex> use Ckini
+  iex> teacupo = fn x ->
+  ...>   conde do
+  ...>     _ -> eq(x, :tea)
+  ...>     _ -> eq(x, :cup)
+  ...>   end
+  ...> end
+  iex> run({x, y}) do
+  ...>   conda do
+  ...>     _ ->
+  ...>       teacupo.(x)
+  ...>       eq(1, 2)
+  ...>     _ ->
+  ...>       eq(x, 1)
+  ...>       eq(y, x)
+  ...>   end
+  ...> end
+  []
+  """
   defmacro conda(do: cases) do
     cases = extract_cond_clauses(cases)
 
@@ -155,6 +313,51 @@ defmodule Ckini.Macro do
     end
   end
 
+  @doc """
+  `condu/1` is similar to `conda/1` in the sense that it also treats
+  the first successful subgoal as the only branch. Unlike `conda/1`,
+  `condu/1` also restrict its subgoal to have only one possibilities.
+
+  ## Examples
+
+  iex> use Ckini
+  iex> teacupo = fn x ->
+  ...>   conde do
+  ...>     _ -> eq(x, :tea)
+  ...>     _ -> eq(x, :cup)
+  ...>   end
+  ...> end
+  iex> run({x, y}) do
+  ...>   conda do
+  ...>     _ ->
+  ...>       teacupo.(x)
+  ...>       eq(y, x)
+  ...>     _ ->
+  ...>       eq(x, 1)
+  ...>       eq(y, x)
+  ...>   end
+  ...> end
+  [{:tea, :tea}]
+
+  iex> use Ckini
+  iex> teacupo = fn x ->
+  ...>   conde do
+  ...>     _ -> eq(x, :tea)
+  ...>     _ -> eq(x, :cup)
+  ...>   end
+  ...> end
+  iex> run({x, y}) do
+  ...>   condu do
+  ...>     _ ->
+  ...>       teacupo.(x)
+  ...>       eq(1, 2)
+  ...>     _ ->
+  ...>       eq(x, 1)
+  ...>       eq(y, x)
+  ...>   end
+  ...> end
+  []
+  """
   defmacro condu(do: cases) do
     cases = extract_cond_clauses(cases)
 
@@ -251,6 +454,10 @@ defmodule Ckini.Macro do
     end
   end
 
+  defp cond_clauses_to_goals({:->, _, _} = single) do
+    cond_clauses_to_goals([single])
+  end
+
   defp cond_clauses_to_goals(cases) do
     for {vars, goals} <- extract_cond_clauses(cases) do
       quote do
@@ -324,8 +531,8 @@ defmodule Ckini.Macro do
 
   defp extract_goals(clause) do
     case clause do
-      {:__block__, _, []} -> []
-      {:__block__, _, goals} -> goals
+      {:__block__, _, goals} -> Enum.flat_map(goals, &extract_goals/1)
+      goals when is_list(goals) -> Enum.flat_map(goals, &extract_goals/1)
       goal -> [goal]
     end
   end
