@@ -27,7 +27,7 @@ defmodule Ckini.Goals do
   end
 
   @doc """
-  succ is a goal that always succeeds.
+  fail is a goal that always fails.
 
   iex> use Ckini
   iex> run(x) do
