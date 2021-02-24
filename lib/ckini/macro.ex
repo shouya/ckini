@@ -404,13 +404,20 @@ defmodule Ckini.Macro do
   do...end block contains a series of clauses of `pattern -> goals`
   syntax.
 
-  You can use variables freely in the pattern, as they will be
-  introduced automatically. You can also use `_` in the pattern as
-  placeholder to ignore values you don't need.
+  You can write logic variables freely in the pattern, as the will be
+  bind to corresponding value automatically. You can also use `_` in
+  the pattern as a placeholder to ignore values you don't need.
 
-  If you need extra variables other than those appeared in `pattern`,
-  you can use `pattern, extra_variables -> goals` syntax. You can use
-  `{}` to enclose multiple variables as in `fresh/1`.
+  If you need extra variables in the body other than those appeared in
+  `pattern`, you can use `pattern, extra_variables -> goals`
+  syntax. You can use `{}` to enclose multiple variables in
+  `extra_variables` as in `fresh/1`.
+
+  The implementation detail is that each match* clause will be
+  converted to a cond* clause by inserting a `eq(value, pattern)` goal
+  in front of other goals. The implication is that for matcha and
+  matchu, this `eq` goal will be treated as the conditional for the
+  rest of subgoals.
 
   ## Examples
 
@@ -424,17 +431,42 @@ defmodule Ckini.Macro do
   ...>   end
   ...> end
   [:_0, [1, :_0], [:_0, 2], [:_0, :_1]]
+
+  iex> use Ckini
+  iex> run(x) do
+  ...>   matche x do
+  ...>     _ ->
+  ...>       succ()
+  ...>     [y, _], z ->
+  ...>       eq(y, z)
+  ...>       eq(z, 1)
+  ...>     [_, y], {z, w} ->
+  ...>       eq(y, [z, w])
+  ...>     [_, _] ->
+  ...>       succ()
+  ...>   end
+  ...> end
+  [:_0, [1, :_0], [:_0, [:_1, :_2]], [:_0, :_1]]
   """
 
   defmacro matche(pattern, do: clauses),
     do: {:conde, [], [[do: match_to_cond_clause(pattern, clauses)]]}
 
+  @doc """
+  See documentation for `matche/2`.
+  """
   defmacro matchi(pattern, do: clauses),
     do: {:condi, [], [[do: match_to_cond_clause(pattern, clauses)]]}
 
+  @doc """
+  See documentation for `matche/2`.
+  """
   defmacro matcha(pattern, do: clauses),
     do: {:conda, [], [[do: match_to_cond_clause(pattern, clauses)]]}
 
+  @doc """
+  See documentation for `matche/2`.
+  """
   defmacro matchu(pattern, do: clauses),
     do: {:condu, [], [[do: match_to_cond_clause(pattern, clauses)]]}
 
