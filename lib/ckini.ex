@@ -1,6 +1,6 @@
 defmodule Ckini do
   @moduledoc """
-  Imports primitives from Ckini.Goals and Ckini.Macro.
+  Imports primitives from `Ckini.Goals` and `Ckini.Macro`.
   Check out the documentation for these two modules for details.
   """
   defmacro __using__(opts \\ []) do

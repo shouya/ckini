@@ -1,8 +1,6 @@
 defmodule Ckini.Macro do
   @moduledoc """
-  MiniKanren-like interface using Macro.
-
-  Exports run, fresh, conde, condi, conda, condu.
+  A set of MiniKanren-like primitives.
   """
 
   alias Ckini.{Stream, Context, Term}

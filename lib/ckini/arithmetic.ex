@@ -26,21 +26,30 @@ defmodule Ckini.Arithmetic do
   def to_number([1 | x]), do: 2 * to_number(x) + 1
 
   @doc """
-  iex> use Ckini
-  iex> n = Var.new()
-  iex> run(n, pluso(from_number(5), from_number(4), n))
-  [from_number(9)]
-  iex> m = Var.new()
-  iex> run({m, n}, pluso(m, n, from_number(3)))
-  [{from_number(3), from_number(0)},
-   {from_number(0), from_number(3)},
-   {from_number(1), from_number(2)},
-   {from_number(2), from_number(1)}]
+  Relation for n + m = k.
+
+  ## Examples
+
+      iex> use Ckini
+      iex> n = Var.new()
+      iex> run(n, pluso(from_number(5), from_number(4), n))
+      [from_number(9)]
+      iex> m = Var.new()
+      iex> run({m, n}, pluso(m, n, from_number(3)))
+      [{from_number(3), from_number(0)},
+       {from_number(0), from_number(3)},
+       {from_number(1), from_number(2)},
+       {from_number(2), from_number(1)}]
   """
   def pluso(n, m, k) do
     addero(0, n, m, k)
   end
 
+  @doc """
+  Relation for n - m = k.
+
+  See `pluso/3`.
+  """
   def minuso(n, m, k) do
     pluso(m, k, n)
   end
@@ -80,7 +89,9 @@ defmodule Ckini.Arithmetic do
     eq([a | d], n)
   end
 
-  # The operator >1o
+  @doc """
+  Relation that holds for n > 1.
+  """
   def gt1o(n) do
     [a, b, d] = Var.new_many(3)
     eq([a, b | d], n)
@@ -100,18 +111,22 @@ defmodule Ckini.Arithmetic do
   end
 
   @doc """
-  iex> use Ckini
-  iex> n = Var.new()
-  iex> run(n, mulo(from_number(5), from_number(4), n))
-  [from_number(20)]
-  iex> m = Var.new()
-  iex> run({m, n}, mulo(m, n, from_number(12)))
-  [{from_number(1), from_number(12)},
-   {from_number(12), from_number(1)},
-   {from_number(2), from_number(6)},
-   {from_number(4), from_number(3)},
-   {from_number(6), from_number(2)},
-   {from_number(3), from_number(4)}]
+  Relation for n * m = p.
+
+  ## Examples
+
+      iex> use Ckini
+      iex> n = Var.new()
+      iex> run(n, mulo(from_number(5), from_number(4), n))
+      [from_number(20)]
+      iex> m = Var.new()
+      iex> run({m, n}, mulo(m, n, from_number(12)))
+      [{from_number(1), from_number(12)},
+       {from_number(12), from_number(1)},
+       {from_number(2), from_number(6)},
+       {from_number(4), from_number(3)},
+       {from_number(6), from_number(2)},
+       {from_number(3), from_number(4)}]
   """
   def mulo(n, m, p) do
     [x, y, z] = Var.new_many(3)
@@ -168,10 +183,12 @@ defmodule Ckini.Arithmetic do
   @doc """
   Relation for n < m.
 
-  iex> use Ckini
-  iex> n = Var.new()
-  iex> run(n, lto(n, from_number(3)))
-  [from_number(0), from_number(1), from_number(2)]
+  ## Examples
+
+      iex> use Ckini
+      iex> n = Var.new()
+      iex> run(n, lto(n, from_number(3)))
+      [from_number(0), from_number(1), from_number(2)]
   """
   def lto(n, m) do
     x = Var.new()
@@ -185,10 +202,12 @@ defmodule Ckini.Arithmetic do
   @doc """
   Relation for n < m.
 
-  iex> use Ckini
-  iex> n = Var.new()
-  iex> run(n, leo(n, from_number(3)))
-  [from_number(0), from_number(1), from_number(2), from_number(3)]
+  ## Examples
+
+      iex> use Ckini
+      iex> n = Var.new()
+      iex> run(n, leo(n, from_number(3)))
+      [from_number(0), from_number(1), from_number(2), from_number(3)]
   """
   def leo(n, m) do
     conde([fn -> lto(n, m) end, eq(n, m)])
@@ -197,14 +216,16 @@ defmodule Ckini.Arithmetic do
   @doc """
   Relation for n = m * q + r, with 0 <= r < m.
 
+  ## Examples
+
   In this example we test for some n,m pairs that satisfies n = m * 3 + 1.
 
-  iex> use Ckini
-  iex> n = Var.new()
-  iex> for i <- 2..10 do
-  ...>   r = run(n, divo(n, from_number(i), from_number(3), from_number(1)))
-  ...>   assert [from_number(i*3+1)] == r
-  ...> end
+      iex> use Ckini
+      iex> n = Var.new()
+      iex> for i <- 2..10 do
+      ...>   r = run(n, divo(n, from_number(i), from_number(3), from_number(1)))
+      ...>   assert [from_number(i*3+1)] == r
+      ...> end
   """
   def divo(n, m, q, r) do
     conde([
@@ -304,9 +325,11 @@ defmodule Ckini.Arithmetic do
   end
 
   @doc """
-  This function doesn't spit out complete result yet. More investigation needed.
+  Relation that holds for n = b^q + r.
 
-  See https://github.com/shouya/ckini/issues/1
+  This relation doesn't spit out complete result yet. More investigation needed.
+
+  See https://github.com/shouya/ckini/issues/1.
   """
   def logo(n, b, q, r) do
     [a, bb, dd, add, ddd, bw1, bw, nw, nw1, ql1, ql] = Var.new_many(11)
@@ -402,7 +425,7 @@ defmodule Ckini.Arithmetic do
     ])
   end
 
-  def appendo(l, s, out) do
+  defp appendo(l, s, out) do
     [a, d, res] = Var.new_many(3)
 
     conde([
