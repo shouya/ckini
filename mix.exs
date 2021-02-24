@@ -30,7 +30,7 @@ defmodule Ckini.MixProject do
   defp package do
     [
       name: "ckini",
-      files: ~w(lib mix.exs README LICENSE),
+      files: ~w(lib mix.exs README.md LICENSE),
       licenses: ["GPL-2.0"],
       links: %{"GitHub" => "https://github.com/shouya/ckini"}
     ]
