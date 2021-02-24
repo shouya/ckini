@@ -1,6 +1,6 @@
 defmodule Ckini.Goals do
   @moduledoc """
-  This module defines generic goals and combinators like anyo.
+  This module defines generic goals like eq.
   """
 
   import Ckini.Macro
