@@ -149,9 +149,10 @@ defmodule Ckini.Goals do
   iex> run({w, z}) do
   ...>   eq([:a, x, 5, y, x], w)
   ...>   copy_termo(w, z)
+  ...>   eq(x, 1)
   ...> end
-  [{[:a, :_0, 5, :_1, :_0],
-    [:a, :_2, 5, :_3, :_2]}]
+  [{[:a,   1, 5, :_0,   1],
+    [:a, :_1, 5, :_2, :_1]}]
   """
   def copy_termo(t1, t2) do
     project(t1, fn t ->
