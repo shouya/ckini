@@ -15,11 +15,18 @@ defmodule Ckini.Arithmetic do
 
   require Integer
 
+  @doc """
+  Convert an Elixir integer (>= 0) to a list-encoded
+  numeral representing the number to be used by the relations.
+  """
   def from_number(0), do: []
   def from_number(1), do: [1]
   def from_number(n) when Integer.is_even(n), do: [0 | from_number(div(n, 2))]
   def from_number(n), do: [1 | from_number(div(n, 2))]
 
+  @doc """
+  Convert a list-encoded numeral back to an Elixir integer.
+  """
   def to_number([]), do: 0
   def to_number([1]), do: 1
   def to_number([0 | x]), do: 2 * to_number(x)
