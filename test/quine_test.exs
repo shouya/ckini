@@ -76,7 +76,7 @@ defmodule QuineTest do
     end
   end
 
-  # @tag :skip
+  @tag :skip
   @tag timeout: 600_000
   test "code for testing" do
     for p <- run(2, q, do: evalo(q, [], q)) do

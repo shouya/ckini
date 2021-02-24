@@ -12,11 +12,13 @@ defmodule MacroTest do
     |> Macro.to_string()
     |> Code.format_string!()
     |> :erlang.iolist_to_binary()
-    |> IO.puts()
+
+    # |> IO.puts()
 
     body
   end
 
+  @tag :skip
   test "foo" do
     goal =
       debug_macro do
