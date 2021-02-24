@@ -20,8 +20,8 @@ defmodule Ckini.Context do
   @type t :: %__MODULE__{
           subst: Subst.t(),
           neq: [Subst.t()],
-          sym: MapSet.new(Var.t()),
-          abs: MapSet.new({Term.t(), Term.t()})
+          sym: MapSet.t(Var.t()),
+          abs: MapSet.t({Term.t(), Term.t()})
         }
 
   def new() do

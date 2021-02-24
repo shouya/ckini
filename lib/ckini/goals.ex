@@ -9,7 +9,7 @@ defmodule Ckini.Goals do
   require Logger
   require Term
 
-  @type goal :: Ckini.goal()
+  @type goal :: (Context.t() -> Stream.t(Context.t()))
 
   @doc """
   succ is a goal that always succeeds.

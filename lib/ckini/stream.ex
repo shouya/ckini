@@ -6,11 +6,15 @@ defmodule Ckini.Stream do
   other types.
   """
 
+  alias Ckini.Context
+
   defstruct [:car, :cdr]
 
   @type t(v) :: nil | %__MODULE__{car: v, cdr: t(v)} | (() -> t(v))
   @type t :: t(any())
-  @type goal :: Ckini.goal()
+
+  @type goal :: (Context.t() -> t(Context.t()))
+
   # type var
   @typep a :: any()
   @typep b :: any()
