@@ -20,19 +20,19 @@ defmodule Ckini.Macro do
 
   ## Examples
 
-  iex> use Ckini
-  iex> run q do
-  ...>   fresh x do
-  ...>     eq([x, q], [q, 1])
-  ...>   end
-  ...> end
-  [1]
-  iex> run q do
-  ...>   fresh {x, y} do
-  ...>     eq([x, y, q], [y, 1, x])
-  ...>   end
-  ...> end
-  [1]
+      iex> use Ckini
+      iex> run q do
+      ...>   fresh x do
+      ...>     eq([x, q], [q, 1])
+      ...>   end
+      ...> end
+      [1]
+      iex> run q do
+      ...>   fresh {x, y} do
+      ...>     eq([x, y, q], [y, 1, x])
+      ...>   end
+      ...> end
+      [1]
 
   Also see `all/1`.
   """
@@ -53,19 +53,19 @@ defmodule Ckini.Macro do
 
   ## Examples
 
-  iex> use Ckini
-  iex> run q do
-  ...> end
-  [:_0]
-  iex> run {x, y} do
-  ...>   eq(x, 1)
-  ...>   conde do
-  ...>     _ -> eq(y, 1)
-  ...>     _ -> eq(y, 2)
-  ...>     _ -> eq(x, 2)
-  ...>   end
-  ...> end
-  [{1, 1}, {1, 2}]
+      iex> use Ckini
+      iex> run q do
+      ...> end
+      [:_0]
+      iex> run {x, y} do
+      ...>   eq(x, 1)
+      ...>   conde do
+      ...>     _ -> eq(y, 1)
+      ...>     _ -> eq(y, 2)
+      ...>     _ -> eq(x, 2)
+      ...>   end
+      ...> end
+      [{1, 1}, {1, 2}]
 
   Also see `run/3` for limited of possible values.
   """
@@ -93,16 +93,16 @@ defmodule Ckini.Macro do
 
   ## Examples
 
-  iex> use Ckini
-  iex> run(2, q) do
-  ...>   conde do
-  ...>     _ -> eq(q, 1)
-  ...>     _ -> eq(q, 2)
-  ...>     _ -> eq(q, 3)
-  ...>     _ -> eq(q, 4)
-  ...>   end
-  ...> end
-  [1, 2]
+      iex> use Ckini
+      iex> run(2, q) do
+      ...>   conde do
+      ...>     _ -> eq(q, 1)
+      ...>     _ -> eq(q, 2)
+      ...>     _ -> eq(q, 3)
+      ...>     _ -> eq(q, 4)
+      ...>   end
+      ...> end
+      [1, 2]
 
   Also see `run/2` that allows querying unlimited possible values.
   """
@@ -130,15 +130,15 @@ defmodule Ckini.Macro do
 
   ## Examples
 
-  iex> use Ckini
-  iex> run(x) do
-  ...>   eq(x, 1)
-  ...>   all do
-  ...>     eq(x, 2)
-  ...>     eq(x, 1)
-  ...>   end
-  ...> end
-  []
+      iex> use Ckini
+      iex> run(x) do
+      ...>   eq(x, 1)
+      ...>   all do
+      ...>     eq(x, 2)
+      ...>     eq(x, 1)
+      ...>   end
+      ...> end
+      []
 
   The preceding example is only for demonstration. The usage of
   `all/1` in the example is not necessary.
@@ -148,10 +148,10 @@ defmodule Ckini.Macro do
   end
 
   @doc """
-  Create a goal from a sequence of subgoals by taking disjunction on them.
+  Creates a goal from a sequence of subgoals by taking disjunction on them.
   In other words, this syntax creates multiple possibilities.
 
-  Conde performs depth-first search. Which means, conde will explore
+  `conde` performs depth-first search. Which means, conde will explore
   all possibilities of the first subgoal before exploring the second
   subgoal, and so on.
 
@@ -167,14 +167,14 @@ defmodule Ckini.Macro do
 
   ## Examples
 
-  iex> use Ckini
-  iex> run(x) do
-  ...>   conde do
-  ...>     _ -> eq(x, 2)
-  ...>     _ -> eq(x, 1)
-  ...>   end
-  ...> end
-  [2, 1]
+      iex> use Ckini
+      iex> run(x) do
+      ...>   conde do
+      ...>     _ -> eq(x, 2)
+      ...>     _ -> eq(x, 1)
+      ...>   end
+      ...> end
+      [2, 1]
 
   Also see `condi/1`, `conda/1`, `condu/1`, `matche/2`.
   """
@@ -189,7 +189,7 @@ defmodule Ckini.Macro do
   end
 
   @doc """
-  Create a goal from a sequence of subgoals by taking disjunction on them.
+  Creates a goal from a sequence of subgoals by taking disjunction on them.
   In other words, this syntax creates multiple possibilities.
 
   Unlike `conde/1`, `condi/1` performs a different type of search
@@ -201,14 +201,14 @@ defmodule Ckini.Macro do
 
   ## Examples
 
-  iex> use Ckini
-  iex> run(x) do
-  ...>   condi do
-  ...>     _ -> eq(x, 2)
-  ...>     _ -> eq(x, 1)
-  ...>   end
-  ...> end
-  [2, 1]
+      iex> use Ckini
+      iex> run(x) do
+      ...>   condi do
+      ...>     _ -> eq(x, 2)
+      ...>     _ -> eq(x, 1)
+      ...>   end
+      ...> end
+      [2, 1]
 
   Also see `conde/1`, `conda/1`, `condu/1`, `matchi/2`.
   """
@@ -223,7 +223,7 @@ defmodule Ckini.Macro do
   end
 
   @doc """
-  `conda/1` performs what's called a "soft-cut" operation in
+  Performs what's called a "soft-cut" operation in
   Prolog. In each of its subgoals, if they are composed of multiple
   goals and the first goal succeeds. `conda/1` will behave like the subgoal
   is the only branch.
@@ -232,43 +232,43 @@ defmodule Ckini.Macro do
 
   ## Examples
 
-  iex> use Ckini
-  iex> teacupo = fn x ->
-  ...>   conde do
-  ...>     _ -> eq(x, :tea)
-  ...>     _ -> eq(x, :cup)
-  ...>   end
-  ...> end
-  iex> run({x, y}) do
-  ...>   conda do
-  ...>     _ ->
-  ...>       teacupo.(x)
-  ...>       eq(y, x)
-  ...>     _ ->
-  ...>       eq(x, 1)
-  ...>       eq(y, x)
-  ...>   end
-  ...> end
-  [{:tea, :tea}, {:cup, :cup}]
+      iex> use Ckini
+      iex> teacupo = fn x ->
+      ...>   conde do
+      ...>     _ -> eq(x, :tea)
+      ...>     _ -> eq(x, :cup)
+      ...>   end
+      ...> end
+      iex> run({x, y}) do
+      ...>   conda do
+      ...>     _ ->
+      ...>       teacupo.(x)
+      ...>       eq(y, x)
+      ...>     _ ->
+      ...>       eq(x, 1)
+      ...>       eq(y, x)
+      ...>   end
+      ...> end
+      [{:tea, :tea}, {:cup, :cup}]
 
-  iex> use Ckini
-  iex> teacupo = fn x ->
-  ...>   conde do
-  ...>     _ -> eq(x, :tea)
-  ...>     _ -> eq(x, :cup)
-  ...>   end
-  ...> end
-  iex> run({x, y}) do
-  ...>   conda do
-  ...>     _ ->
-  ...>       teacupo.(x)
-  ...>       eq(1, 2)
-  ...>     _ ->
-  ...>       eq(x, 1)
-  ...>       eq(y, x)
-  ...>   end
-  ...> end
-  []
+      iex> use Ckini
+      iex> teacupo = fn x ->
+      ...>   conde do
+      ...>     _ -> eq(x, :tea)
+      ...>     _ -> eq(x, :cup)
+      ...>   end
+      ...> end
+      iex> run({x, y}) do
+      ...>   conda do
+      ...>     _ ->
+      ...>       teacupo.(x)
+      ...>       eq(1, 2)
+      ...>     _ ->
+      ...>       eq(x, 1)
+      ...>       eq(y, x)
+      ...>   end
+      ...> end
+      []
 
   Also see `conde/1`, `condi/1`, `condu/1`, `matcha/2`.
   """
@@ -316,49 +316,49 @@ defmodule Ckini.Macro do
   end
 
   @doc """
-  `condu/1` is similar to `conda/1` in the sense that it also treats
+  Similar to `conda/1` in the sense that it also treats
   the first successful subgoal as the only branch. Unlike `conda/1`,
   `condu/1` also restrict its subgoal to have only one possibilities.
 
   ## Examples
 
-  iex> use Ckini
-  iex> teacupo = fn x ->
-  ...>   conde do
-  ...>     _ -> eq(x, :tea)
-  ...>     _ -> eq(x, :cup)
-  ...>   end
-  ...> end
-  iex> run({x, y}) do
-  ...>   condu do
-  ...>     _ ->
-  ...>       teacupo.(x)
-  ...>       eq(y, x)
-  ...>     _ ->
-  ...>       eq(x, 1)
-  ...>       eq(y, x)
-  ...>   end
-  ...> end
-  [{:tea, :tea}]
+      iex> use Ckini
+      iex> teacupo = fn x ->
+      ...>   conde do
+      ...>     _ -> eq(x, :tea)
+      ...>     _ -> eq(x, :cup)
+      ...>   end
+      ...> end
+      iex> run({x, y}) do
+      ...>   condu do
+      ...>     _ ->
+      ...>       teacupo.(x)
+      ...>       eq(y, x)
+      ...>     _ ->
+      ...>       eq(x, 1)
+      ...>       eq(y, x)
+      ...>   end
+      ...> end
+      [{:tea, :tea}]
 
-  iex> use Ckini
-  iex> teacupo = fn x ->
-  ...>   conde do
-  ...>     _ -> eq(x, :tea)
-  ...>     _ -> eq(x, :cup)
-  ...>   end
-  ...> end
-  iex> run({x, y}) do
-  ...>   condu do
-  ...>     _ ->
-  ...>       teacupo.(x)
-  ...>       eq(1, 2)
-  ...>     _ ->
-  ...>       eq(x, 1)
-  ...>       eq(y, x)
-  ...>   end
-  ...> end
-  []
+      iex> use Ckini
+      iex> teacupo = fn x ->
+      ...>   conde do
+      ...>     _ -> eq(x, :tea)
+      ...>     _ -> eq(x, :cup)
+      ...>   end
+      ...> end
+      iex> run({x, y}) do
+      ...>   condu do
+      ...>     _ ->
+      ...>       teacupo.(x)
+      ...>       eq(1, 2)
+      ...>     _ ->
+      ...>       eq(x, 1)
+      ...>       eq(y, x)
+      ...>   end
+      ...> end
+      []
 
   Also see `conde/1`, `condi/1`, `conda/1`, `matchu/2`.
   """
@@ -421,32 +421,32 @@ defmodule Ckini.Macro do
 
   ## Examples
 
-  iex> use Ckini
-  iex> run(x) do
-  ...>   matche x do
-  ...>     _ -> succ()
-  ...>     [y, _] -> eq(y, 1)
-  ...>     [_, y] -> eq(y, 2)
-  ...>     [_, _] -> succ()
-  ...>   end
-  ...> end
-  [:_0, [1, :_0], [:_0, 2], [:_0, :_1]]
+      iex> use Ckini
+      iex> run(x) do
+      ...>   matche x do
+      ...>     _ -> succ()
+      ...>     [y, _] -> eq(y, 1)
+      ...>     [_, y] -> eq(y, 2)
+      ...>     [_, _] -> succ()
+      ...>   end
+      ...> end
+      [:_0, [1, :_0], [:_0, 2], [:_0, :_1]]
 
-  iex> use Ckini
-  iex> run(x) do
-  ...>   matche x do
-  ...>     _ ->
-  ...>       succ()
-  ...>     [y, _], z ->
-  ...>       eq(y, z)
-  ...>       eq(z, 1)
-  ...>     [_, y], {z, w} ->
-  ...>       eq(y, [z, w])
-  ...>     [_, _] ->
-  ...>       succ()
-  ...>   end
-  ...> end
-  [:_0, [1, :_0], [:_0, [:_1, :_2]], [:_0, :_1]]
+      iex> use Ckini
+      iex> run(x) do
+      ...>   matche x do
+      ...>     _ ->
+      ...>       succ()
+      ...>     [y, _], z ->
+      ...>       eq(y, z)
+      ...>       eq(z, 1)
+      ...>     [_, y], {z, w} ->
+      ...>       eq(y, [z, w])
+      ...>     [_, _] ->
+      ...>       succ()
+      ...>   end
+      ...> end
+      [:_0, [1, :_0], [:_0, [:_1, :_2]], [:_0, :_1]]
   """
 
   defmacro matche(pattern, do: clauses),
