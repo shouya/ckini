@@ -1,5 +1,8 @@
 defmodule Ckini.Term do
-  @moduledoc false
+  @moduledoc """
+  A logic term. It's either a variable or a list or a ground term
+  represented by an Elixir term.
+  """
 
   alias Ckini.{Var, Subst, Context}
 

@@ -1,13 +1,16 @@
 defmodule Ckini.Subst do
   @moduledoc """
-  A substitution is an ordered list of associations.
+  A substitution is set of associations.
   An association is a {var, val} pair. See the type specs below for details.
   """
 
   alias Ckini.{Var, Term}
   require Term
 
+  @typedoc "An association representing the fact that Var is associated with Term"
   @type assoc :: {Var.t(), Term.t()}
+
+  @typedoc "A substitution"
   @type t :: map()
 
   defguard is_empty(s) when is_map(s) and map_size(s) == 0
