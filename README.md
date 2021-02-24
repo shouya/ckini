@@ -1,6 +1,6 @@
 # Ckini
 
-A miniKanren-like logic programming framework in Elixir.
+A miniKanren implementation in Elixir.
 
 ## Usage
 
@@ -10,21 +10,20 @@ A miniKanren-like logic programming framework in Elixir.
     alias Ckini.Var
 
     def readme_demo do
-      x = Var.new()
-      y = Var.new()
-      z = Var.new()
-
-      run({x, y, z}, [
+      run {x, y, z} do
         # simple goal
-        eq(y, 1),
+        eq(y, 1)
         # a conde goal
-        conde([eq(y, 2), eq(z, 3), eq(x, 4)]),
-        # you can create logic variable any time
-        fn ->
-          t = Var.new()
+        conde do
+          _ -> eq(y, 2)
+          _ -> eq(z, 3)
+          _ -> eq(x, 4)
+        end
+        # you can create logic variable with fresh
+        fresh t do
           eq(x, [y, z, t, "hello"])
         end
-      ])
+      end
     end
   end
 
@@ -34,29 +33,18 @@ A miniKanren-like logic programming framework in Elixir.
 ```
 
 
-API available: `run/2`, `run/3`, `eq` (`===`), `neq` (`=/=`), `conde`, `condi`, `conda`, `all`, `project`, `succ`, `fail`, `symbolo`, `absento`, `copy_termo`, `anyo`, `onceo`.
+API available: `run/2`, `run/3`, `eq` (`===`), `neq` (`=/=`), `cond{e,i,a,u}`, `match{e,i,a,u}`, `all`, `project`, `succ`, `fail`, `symbolo`, `absento`, `copy_termo`, `anyo`, `onceo`.
 
-(Please note `fresh` is not required with this syntax).
+Check out the https://github.com/shouya/ckini/blob/master/test/*_test.exs for more usage examples.
 
-Check out the https://github.com/shouya/ckini/blob/master/test/ckini_test.exs for more usage examples.
+## Feature highlights
 
-I'm still working on a Macro interface to mimic the original TRS miniKanren implementation.
-
-More documentation in progress...
-
-## Features
-
-1. Ckini's substitution is implemented using Elixir `Map` unify is implemented using incremental approach. This potentially makes it more efficient.
-2. Ckini allows multiple values to be queried in `run`.
-3. Ckini's implementation doesn't use any Macro. As a result, `fresh` is not needed.
-
-## Roadmap
-
-1. [x] conda and condu
-2. [x] neq
-3. [x] symbolo constraint
-4. [x] absento constraint
-5. [ ] numbero constraint
+- arithmetic operators (See `Ckini.Arithmetic`)
+- introduction of fresh variables via `cond{e,i,a,u}`
+- pattern matching with `match{e,i,a,u}` macros
+- inequality (`neq`) constraint
+- symbolo constraint
+- absento constraint
 
 ## References
 
