@@ -1,7 +1,7 @@
 defmodule Ckini.Functional do
   @moduledoc false
 
-  alias Ckini.{Subst, Stream, Term, Context, Goals}
+  alias Ckini.{Stream, Term, Context}
 
   @type goal :: (Context.t() -> Stream.t(Context.t()))
 
@@ -138,18 +138,5 @@ defmodule Ckini.Functional do
       subgoals = to_goal_stream(subgoals)
       Stream.bind_goals(Stream.take(subs, 1), subgoals)
     end
-  end
-
-  def project(var, f) do
-    fn ctx ->
-      to_goal(f.(Subst.deep_walk(ctx.subst, var))).(ctx)
-    end
-  end
-
-  def peek(var) do
-    project(var, fn v ->
-      IO.inspect(v)
-      Goals.succ()
-    end)
   end
 end

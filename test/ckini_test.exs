@@ -117,9 +117,7 @@ defmodule CkiniTest do
       run(q) do
         eq(q, false)
 
-        Ckini.Functional.project(q, fn q ->
-          eq(not (not q), q)
-        end)
+        project(q, fn q -> eq(not (not q), q) end)
       end
 
     assert result == [false]

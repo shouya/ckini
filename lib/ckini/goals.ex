@@ -3,9 +3,10 @@ defmodule Ckini.Goals do
   This module defines generic goals and combinators like anyo.
   """
 
-  import Ckini.Functional, only: [project: 2]
   import Ckini.Macro
   alias Ckini.{Stream, Subst, Var, Context, Term}
+
+  require Logger
   require Term
 
   @type goal :: Ckini.goal()
@@ -233,5 +234,71 @@ defmodule Ckini.Goals do
       [t | ts] -> subs |> build_s(t) |> build_s(ts)
       _ -> subs
     end
+  end
+
+  @doc """
+  Project a logic variable to Elixir variable.
+
+  Normally, you cannot perform native Elixir operations on logic
+  variables.  For example, you cannot run `not x` if `x` is a logic
+  variable that happens to bind to a boolean value.
+
+  Project/2 provides a way to access to the current value of a logic
+  variable. Note that if the variable is not currently bound to a
+  ground term, you may still get a logic variable back.
+
+  ## Examples
+
+  iex> use Ckini
+  iex> run q do
+  ...>   fresh x do
+  ...>     eq(x, false)
+  ...>     project(x, fn x ->
+  ...>       eq(q, not x)
+  ...>     end)
+  ...>   end
+  ...> end
+  [true]
+  """
+  def project(var, f) do
+    fn ctx ->
+      f.(Subst.deep_walk(ctx.subst, var)).(ctx)
+    end
+  end
+
+  @doc """
+  Print the current value of a logic variable. You can peek into
+  multiple variables by enclosing them with a tuple.
+
+  `peek/1` comes handy for debugging purposes.
+
+  ## Examples
+
+  ````
+  iex> use Ckini
+  iex> log = ExUnit.CaptureLog.capture_log(fn ->
+  ...>   run q do
+  ...>     conde do
+  ...>       z ->
+  ...>         eq(q, 1)
+  ...>         eq(z, q)
+  ...>         peek({z, q})
+  ...>       z ->
+  ...>         eq(q, 2)
+  ...>         peek({z, q})
+  ...>         eq(z, q)
+  ...>     end
+  ...>   end
+  ...> end)
+  iex> String.contains?(log, "{1, 1}")
+  true
+  iex> String.match?(log, ~r/\{z<\\d+>, 2\}/)
+  true
+  """
+  def peek(var) do
+    project(var, fn v ->
+      Logger.info(inspect(v))
+      succ()
+    end)
   end
 end
