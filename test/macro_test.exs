@@ -4,7 +4,7 @@ defmodule MacroTest do
   use ExUnit.Case
 
   import Ckini.Macro
-  import Ckini.Goals, only: [eq: 2, succ: 0]
+  import Ckini.Goals, only: [eq: 2]
 
   defmacro debug_macro(do: body) do
     body

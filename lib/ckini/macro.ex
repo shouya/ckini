@@ -438,9 +438,7 @@ defmodule Ckini.Macro do
   defmacro matchu(pattern, do: clauses),
     do: {:condu, [], [[do: match_to_cond_clause(pattern, clauses)]]}
 
-  defp match_to_cond_clause(pattern, clauses) do
-    pivot_pattern = extract_pattern(pattern)
-
+  defp match_to_cond_clause(pivot_pattern, clauses) do
     clauses =
       for {pat, vars, goals} <- extract_match_clauses(clauses) do
         quote location: :keep do
@@ -506,11 +504,6 @@ defmodule Ckini.Macro do
 
   defp extract_match_clauses(cases) do
     for {:->, _, [[pattern | vars], clause]} <- cases do
-      pattern =
-        pattern
-        |> extract_pattern()
-        |> normalize_pattern()
-
       vars =
         case vars do
           [] -> all_vars_in_pattern(pattern)
@@ -520,7 +513,7 @@ defmodule Ckini.Macro do
 
       goals = extract_goals(clause)
 
-      {pattern, vars, goals}
+      {normalize_pattern(pattern), vars, goals}
     end
   end
 
@@ -535,19 +528,10 @@ defmodule Ckini.Macro do
   @spec normalize_pattern(Macro.t()) :: Macro.t()
   defp normalize_pattern(pattern) do
     case pattern do
-      xs when is_list(xs) ->
-        Enum.map(xs, &normalize_pattern/1)
-
-      # multiple :_ can appear in pattern but they are not the same
-      {:_, _, ctx} ->
-        id = System.unique_integer([:positive, :monotonic])
-        Macro.unique_var(:"anon_#{id}", ctx)
-
-      {name, _, _} = var when is_atom(name) ->
-        var
-
-      val ->
-        val
+      xs when is_list(xs) -> Enum.map(xs, &normalize_pattern/1)
+      {:_, _, _} -> quote do: Ckini.Var.new()
+      {name, _, _} = var when is_atom(name) -> var
+      val -> val
     end
   end
 
@@ -566,10 +550,6 @@ defmodule Ckini.Macro do
       {var1, var2} -> [var1, var2]
       {name, _, _} = var when is_atom(name) -> [var]
     end
-  end
-
-  defp extract_pattern(pattern) do
-    pattern
   end
 
   defp extract_goals(clause) do
