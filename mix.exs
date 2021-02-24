@@ -4,11 +4,14 @@ defmodule Ckini.MixProject do
   def project do
     [
       app: :ckini,
+      name: "Ckini",
+      description: "A miniKanren implementation in Elixir",
       version: "0.1.0",
       elixir: "~> 1.10",
       start_permanent: Mix.env() == :prod,
       package: package(),
-      deps: deps()
+      deps: deps(),
+      source_url: "https://github.com/shouya/ckini"
     ]
   end
 
