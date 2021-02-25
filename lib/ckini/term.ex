@@ -6,7 +6,12 @@ defmodule Ckini.Term do
 
   alias Ckini.{Var, Subst, Context}
 
-  @type t :: atom() | binary() | integer() | Var.t() | [t()]
+  @type t ::
+          atom()
+          | binary()
+          | integer()
+          | Var.t()
+          | maybe_improper_list(t(), t())
 
   defguard is_symbol(t) when is_atom(t)
 
