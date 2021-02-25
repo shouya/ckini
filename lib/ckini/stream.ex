@@ -68,42 +68,6 @@ defmodule Ckini.Stream do
     end
   end
 
-  @spec concat2(t(a), t(a)) :: t(a)
-  def concat2(nil, f), do: f
-  def concat2(f, nil), do: f
-  def concat2(f, g) when is_thunk(f), do: fn -> concat2(f.(), g) end
-
-  def concat2(%{car: x, cdr: xs}, g) do
-    cons(x, fn -> concat2(xs, g) end)
-  end
-
-  @doc """
-  Like concat/1, but interleave a stream of stream instead.
-
-  iex> [
-  ...>   [0, 4, 6, 8],
-  ...>   [1, 5, 7],
-  ...>   [2],
-  ...>   [3]
-  ...> ]
-  ...> |> Enum.map(&from_list/1)
-  ...> |> from_list()
-  ...> |> interleave()
-  ...> |> to_list()
-  [0, 1, 2, 3, 4, 5, 6, 7, 8]
-  """
-  @spec interleave(t(t(a))) :: t(a)
-  def interleave(nil), do: nil
-  def interleave(f) when is_thunk(f), do: fn -> interleave(f.()) end
-
-  def interleave(%{car: x, cdr: xs}) do
-    case x do
-      nil -> interleave(xs)
-      f when is_thunk(f) -> fn -> interleave(new(f.(), xs)) end
-      %{car: y, cdr: ys} -> new(y, fn -> interleave(snoc(xs, ys)) end)
-    end
-  end
-
   @spec mplus(t(a), t(a)) :: t(a)
   def mplus(nil, s2), do: s2
   def mplus(s1, nil), do: s1
@@ -135,17 +99,6 @@ defmodule Ckini.Stream do
   def mplus_many(nil), do: nil
   def mplus_many(f) when is_thunk(f), do: fn -> mplus_many(f.()) end
   def mplus_many(%{car: s, cdr: ss}), do: mplus(s, fn -> mplus_many(ss) end)
-
-  @spec rotate1(t(a)) :: t(a)
-  def rotate1(nil), do: nil
-  def rotate1(f) when is_thunk(f), do: fn -> rotate1(f.()) end
-  def rotate1(%{car: x, cdr: xs}), do: snoc(xs, x)
-
-  @spec snoc(t(a), a) :: t(a)
-  def snoc(f, v) when is_thunk(f), do: fn -> snoc(f.(), v) end
-
-  def snoc(nil, v), do: singleton(v)
-  def snoc(%{car: x, cdr: xs}, v), do: new(x, fn -> snoc(xs, v) end)
 
   # the input stream needs to be of element type Subst.t()
   @spec bind_goal(t(Subst.t()), goal()) :: t(Subst.t())
