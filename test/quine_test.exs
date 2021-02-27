@@ -14,7 +14,6 @@ defmodule QuineTest do
         proper_listo(xs, env, val)
 
       _ ->
-        symbolo(exp)
         lookupo(exp, env, val)
 
       {rator, rand, x, body, env_n, a} ->
@@ -25,7 +24,6 @@ defmodule QuineTest do
 
       {x, body} ->
         eq([:lambda, [x], body], exp)
-        symbolo(x)
         eq([:closure, x, body, env], val)
     end
   end
@@ -126,7 +124,7 @@ defmodule QuineTest do
         ["(", "list", " ", Enum.map(xs, &print/1) |> Enum.join(" "), ")"]
 
       [:lambda, [v], body] ->
-        ["(", "lambda", " (", to_string(v), ") ", print(body), ")"]
+        ["(", "lambda", " (", print(v), ") ", print(body), ")"]
 
       [rator, rand] ->
         ["(", print(rator), " ", print(rand), ")"]
@@ -136,6 +134,24 @@ defmodule QuineTest do
 
       xs when is_list(xs) ->
         ["(", xs |> Enum.map(&print/1) |> Enum.join(" "), ")"]
+
+      :_0 ->
+        "x"
+
+      :_1 ->
+        "y"
+
+      :_2 ->
+        "z"
+
+      :_3 ->
+        "a"
+
+      :_4 ->
+        "b"
+
+      :_5 ->
+        "c"
 
       sym ->
         to_string(sym)
