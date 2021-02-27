@@ -115,6 +115,16 @@ defmodule QuineTest do
     assert [_] = run(1, q, do: evalo(q, [], q))
   end
 
+  @pretty_sym %{
+    :_0 => "x",
+    :_1 => "y",
+    :_2 => "z",
+    :_3 => "a",
+    :_4 => "b",
+    :_5 => "c"
+  }
+  @pretty_sym_keys Map.keys(@pretty_sym)
+
   def print(exp) do
     case exp do
       [:quote, v] ->
@@ -135,23 +145,8 @@ defmodule QuineTest do
       xs when is_list(xs) ->
         ["(", xs |> Enum.map(&print/1) |> Enum.join(" "), ")"]
 
-      :_0 ->
-        "x"
-
-      :_1 ->
-        "y"
-
-      :_2 ->
-        "z"
-
-      :_3 ->
-        "a"
-
-      :_4 ->
-        "b"
-
-      :_5 ->
-        "c"
+      exp when exp in @pretty_sym_keys ->
+        @pretty_sym[exp]
 
       sym ->
         to_string(sym)
