@@ -6,14 +6,11 @@ defmodule QuineTest do
     condi do
       v ->
         eq([:quote, v], exp)
-        not_in_envo(:quote, env)
-        absento(v, :closure)
+        absento(exp, :closure)
         eq(v, val)
 
       xs ->
         eq([:list | xs], exp)
-        not_in_envo(:list, env)
-        absento(xs, :closure)
         proper_listo(xs, env, val)
 
       _ ->
@@ -29,7 +26,6 @@ defmodule QuineTest do
       {x, body} ->
         eq([:lambda, [x], body], exp)
         symbolo(x)
-        not_in_envo(:lambda, env)
         eq([:closure, x, body, env], val)
     end
   end
@@ -64,22 +60,10 @@ defmodule QuineTest do
     end
   end
 
-  def not_in_envo(x, env) do
-    condi do
-      {y, v, rest} ->
-        eq(env, [[y | v] | rest])
-        neq(y, x)
-        not_in_envo(x, rest)
-
-      _ ->
-        eq(env, [])
-    end
-  end
-
-  @tag :skip
+  # @tag :skip
   @tag timeout: 600_000
   test "code for testing" do
-    for p <- run(2, q, do: evalo(q, [], q)) do
+    for p <- run(10, q, do: evalo(q, [], q)) do
       case p do
         {t, _c} ->
           IO.puts(print(t))
