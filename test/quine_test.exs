@@ -6,7 +6,7 @@ defmodule QuineTest do
     condi do
       v ->
         eq([:quote, v], exp)
-        absento(exp, :closure)
+        absento(val, :closure)
         eq(v, val)
 
       xs ->
@@ -14,6 +14,7 @@ defmodule QuineTest do
         proper_listo(xs, env, val)
 
       _ ->
+        symbolo(exp)
         lookupo(exp, env, val)
 
       {rator, rand, x, body, env_n, a} ->
