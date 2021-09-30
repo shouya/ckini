@@ -18,6 +18,13 @@ defmodule TypeCheckerTest do
         neq(exp, false)
         lookupo(exp, env, typ)
 
+      {t, cond_, then_, else_} ->
+        eq([:if, cond_, then_, else_], exp)
+        has_typ(cond_, env, :Bool)
+        has_typ(then_, env, t)
+        has_typ(else_, env, t)
+        eq(t, typ)
+
       {x, xt, body, closure_env, body_typ} ->
         eq([:lambda, [x | xt], body], exp)
         eq(closure_env, [[x | xt] | env])
@@ -67,11 +74,13 @@ defmodule TypeCheckerTest do
     tX = Var.new(:X)
     tZZ = Var.new(:ZZ)
     tYY = Var.new(:YY)
+    tW = Var.new(:W)
 
     exprs = [
       true,
-      [:lambda, [:x | :T], :x],
-      [:lambda, [:z | tZZ], [:lambda, [:y | tYY], [:z, [:y, true]]]]
+      [:lambda, [:x | tX], :x],
+      [:lambda, [:z | tZZ], [:lambda, [:y | tYY], [:z, [:y, true]]]],
+      [:lambda, [:w | tW], [:if, true, false, [:w, false]]]
     ]
 
     for expr <- exprs do
@@ -99,7 +108,7 @@ defmodule TypeCheckerTest do
         ["(", print(rator), " ", print(rand), ")"]
 
       %Var{} = v ->
-        inspect(v)
+        to_string(v)
 
       xs when is_list(xs) ->
         ["(", xs |> Enum.map(&print/1) |> Enum.join(" "), ")"]
@@ -131,11 +140,11 @@ defmodule TypeCheckerTest do
       [:fn, t1, t2] ->
         "#{print_t(t1)} -> #{print_t(t2)}"
 
+      %Var{} = v ->
+        to_string(v)
+
       t when t in @pretty_typ_keys ->
         @pretty_typ[t]
-
-      %Var{} = v ->
-        inspect(v)
 
       t ->
         to_string(t)

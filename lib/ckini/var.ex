@@ -40,3 +40,13 @@ defimpl Inspect, for: Ckini.Var do
     "#{sym}<#{id}>"
   end
 end
+
+defimpl String.Chars, for: Ckini.Var do
+  def to_string(%{sym: nil, id: id}) do
+    "var_#{id}"
+  end
+
+  def to_string(%{sym: sym, id: id}) do
+    "#{sym}"
+  end
+end
