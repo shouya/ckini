@@ -5,20 +5,30 @@ defmodule TypeCheckerTest do
   def has_typ(exp, env, typ) do
     condi do
       _ ->
+        eq(exp, true)
+        eq(typ, :Bool)
+
+      _ ->
+        eq(exp, false)
+        eq(typ, :Bool)
+
+      _ ->
         symbolo(exp)
+        neq(exp, true)
+        neq(exp, false)
         lookupo(exp, env, typ)
 
       {x, xt, body, closure_env, body_typ} ->
         eq([:lambda, [x | xt], body], exp)
         eq(closure_env, [[x | xt] | env])
-        has_typ(body, closure_env, body_typ)
         eq(typ, [:fn, xt, body_typ])
+        has_typ(body, closure_env, body_typ)
 
-      {rator, rand, rand_typ, ret_typ} ->
+      {rator, rand, rand_typ} ->
         eq([rator, rand], exp)
-        has_typ(rator, env, [:fn, rand_typ, ret_typ])
+        neq(rator, :lambda)
         has_typ(rand, env, rand_typ)
-        eq(typ, ret_typ)
+        has_typ(rator, env, [:fn, rand_typ, typ])
     end
   end
 
@@ -41,7 +51,7 @@ defmodule TypeCheckerTest do
   test "generating some valid programs" do
     pairs = run(5, {exp, t}, do: has_typ(exp, [], t))
 
-    for {{exp, t}, _constr} <- pairs do
+    for {{exp, t}, _constraints} <- pairs do
       IO.puts("#{print(exp)} : #{print_t(t)}")
     end
 
@@ -51,6 +61,23 @@ defmodule TypeCheckerTest do
     # (lambda (x:S) (lambda (z:B) x)) : S -> B -> S
     # ((lambda (x:S -> S) x) (lambda (z:S) z)) : S -> S
     # (lambda (x:S) (lambda (z:B) (lambda (b:D) b))) : S -> B -> D -> D
+  end
+
+  test "examples on TaPL" do
+    tX = Var.new(:X)
+    tZZ = Var.new(:ZZ)
+    tYY = Var.new(:YY)
+
+    exprs = [
+      true,
+      [:lambda, [:x | :T], :x],
+      [:lambda, [:z | tZZ], [:lambda, [:y | tYY], [:z, [:y, true]]]]
+    ]
+
+    for expr <- exprs do
+      [t] = run(1, t, do: has_typ(expr, [], t))
+      IO.puts("#{print(expr)} : #{print_t(t)}")
+    end
   end
 
   @pretty_sym %{
@@ -106,6 +133,9 @@ defmodule TypeCheckerTest do
 
       t when t in @pretty_typ_keys ->
         @pretty_typ[t]
+
+      %Var{} = v ->
+        inspect(v)
 
       t ->
         to_string(t)
