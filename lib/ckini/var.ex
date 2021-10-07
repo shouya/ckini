@@ -46,7 +46,7 @@ defimpl String.Chars, for: Ckini.Var do
     "var_#{id}"
   end
 
-  def to_string(%{sym: sym, id: id}) do
+  def to_string(%{sym: sym, id: _id}) do
     "#{sym}"
   end
 end

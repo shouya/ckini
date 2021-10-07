@@ -1,4 +1,4 @@
-defmodule TypeCheckerTest do
+defmodule TypeChecker.STLCTest do
   use ExUnit.Case
   use Ckini
 
