@@ -151,26 +151,36 @@ defmodule TypeChecker.STLCTest do
     # Output:
     # (true) : Bool
     # (false) : Bool
-    # Λ T. true : forall T. Bool
     # ((if true true true)) : Bool
     # ((if true true false)) : Bool
-    # Λ T. false : forall T. Bool
+    # Λ T. true : forall T. Bool
     # ((if true false true)) : Bool
-    # (λ (x:S). true) : S -> Bool
+    # Λ T. false : forall T. Bool
     # ((if true false false)) : Bool
     # ((if false true true)) : Bool
-    # Λ T. Λ S. true : forall T. forall S. Bool
-    # Λ T. (if true true true) : forall T. Bool
-    # (λ (x:S). false) : S -> Bool
+    # (λ (x:Bool). true) : Bool -> Bool
     # ((if true true (if true true true))) : Bool
     # ((if false true false)) : Bool
-    # Λ T. (if true true false) : forall T. Bool
-    # Λ T. Λ S. false : forall T. forall S. Bool
+    # Λ T. (if true true true) : forall T. Bool
     # ((if true true (if true true false))) : Bool
-    # (TApp Λ T. true y) : Bool
+    # Λ T. (if true true false) : forall T. Bool
+    # (λ (x:Bool). false) : Bool -> Bool
+    # ((if true true (if true false true))) : Bool
+    # ((if true false (if true true true))) : Bool
+    # Λ T. (if true false true) : forall T. Bool
+    # Λ T. Λ S. true : forall T. forall S. Bool
+    # ((if false false true)) : Bool
+    # ((if true true (if true false false))) : Bool
+    # ((if true false (if true true false))) : Bool
+    # Λ T. (if true false false) : forall T. Bool
+    # Λ T. Λ S. false : forall T. forall S. Bool
+    # ((if false false false)) : Bool
+    # λ (x:Bool). x : Bool -> Bool
+    # (Λ T. true) [S] : Bool
+    # ((if true true (if false true true))) : Bool
   end
 
-  test "identity function" do
+  test "polymorphic identity function" do
     exp = [:Lam, [:X], [:lambda, [:a | :X], :a]]
     [t] = run(1, t, do: has_typ_closed(exp, t))
 
@@ -213,7 +223,7 @@ defmodule TypeChecker.STLCTest do
         ["Λ", " ", print_t(t), ". ", print(body)]
 
       [:TApp, a, t] ->
-        [print(a), " [", print_t(t), "]"]
+        ["(", print(a), ") [", print_t(t), "]"]
 
       [rator, rand] ->
         ["(", print(rator), " ", print(rand), ")"]
