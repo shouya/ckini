@@ -27,16 +27,16 @@ defmodule TypeChecker.STLCTest do
       {t, cond_, then_, else_} ->
         eq([:if, cond_, then_, else_], exp)
         has_typ(cond_, env, typ_env, :Bool)
+        eq(t, typ)
         has_typ(then_, env, typ_env, t)
         has_typ(else_, env, typ_env, t)
-        eq(t, typ)
 
       # T-TAbs
       {typ_var, body, body_typ, new_typ_env} ->
         eq([:Lam, [typ_var], body], exp)
         eq([:forall, typ_var, body_typ], typ)
-        eq(new_typ_env, [typ_var | typ_env])
         symbolo(typ_var)
+        eq(new_typ_env, [typ_var | typ_env])
         not_in_listo(typ_var, typ_env)
         has_typ(body, env, new_typ_env, body_typ)
 
@@ -202,6 +202,31 @@ defmodule TypeChecker.STLCTest do
           IO.puts(print(exp))
       end
     end
+  end
+
+  @tag timeout: 600_000
+  test "parametricity demo 2" do
+    t = [:forall, :X, [:fn, :Bool, [:fn, :X, [:fn, :X, :X]]]]
+
+    IO.puts(print_t(t))
+
+    for exp <- run(5, exp, do: has_typ_closed(exp, t)) do
+      case exp do
+        {exp, _constr} ->
+          IO.puts(print(exp))
+
+        exp ->
+          IO.puts(print(exp))
+      end
+    end
+
+    # outputs:
+    # forall X. Bool -> X -> X -> X
+    # Λ X. λ (x:Bool). λ (y:X). λ (z:X). z
+    # Λ X. λ (x:Bool). λ (y:X). λ (z:X). y
+    # Λ X. λ (x:Bool). λ (y:X). λ (z:X). (if true z z)
+    # Λ X. λ (x:Bool). λ (y:X). (if true λ (z:X). z λ (a:X). a)
+    # Λ X. λ (x:Bool). λ (y:X). λ (z:X). (if true z y)
   end
 
   @pretty_sym %{
