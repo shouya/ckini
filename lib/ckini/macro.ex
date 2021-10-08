@@ -68,6 +68,20 @@ defmodule Ckini.Macro do
   Also see `run/3` for limited of possible values.
   """
   defmacro run(vars, do: goals) do
+    quote do
+      unquote(vars)
+      |> run_stream(do: unquote(goals))
+      |> Elixir.Stream.to_list()
+    end
+  end
+
+  @doc """
+  Query for all possible values of a variable with a goal.
+
+  This macro returns a stream instead of a list. You can use it
+  instead of `run/2` macro to get a continuous stream of results.
+  """
+  defmacro run_stream(vars, do: goals) do
     all_vars = extract_vars(vars)
 
     quote do
@@ -77,7 +91,7 @@ defmodule Ckini.Macro do
       goal
       |> apply([Context.new()])
       |> Stream.map(&Term.reify(unquote(vars), &1))
-      |> Stream.to_list()
+      |> Stream.to_elixir_stream()
     end
   end
 

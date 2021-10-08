@@ -161,4 +161,17 @@ defmodule Ckini.Stream do
   def empty?(nil), do: true
   def empty?(f) when is_thunk(f), do: empty?(f.())
   def empty?(%{car: _, cdr: _}), do: false
+
+  @spec to_elixir_stream(t()) :: Elixir.Stream.t()
+  def to_elixir_stream(v) do
+    Elixir.Stream.unfold(v, &unfold/1)
+  end
+
+  defp unfold(v) do
+    case v do
+      nil -> nil
+      f when is_thunk(f) -> unfold(f.())
+      %{car: x, cdr: xs} -> {x, xs}
+    end
+  end
 end

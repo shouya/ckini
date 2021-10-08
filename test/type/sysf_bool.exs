@@ -1,8 +1,8 @@
-defmodule TypeChecker.SysFTest do
+defmodule TypeChecker.SysFBoolTest do
   use ExUnit.Case
   use Ckini
 
-  @base_typs []
+  @base_typs [:Bool]
 
   def has_typ_closed(exp, typ) do
     has_typ(exp, [], @base_typs, typ)
@@ -11,8 +11,25 @@ defmodule TypeChecker.SysFTest do
   def has_typ(exp, env, typ_env, typ) do
     condi do
       _ ->
+        eq(exp, true)
+        eq(typ, :Bool)
+
+      _ ->
+        eq(exp, false)
+        eq(typ, :Bool)
+
+      _ ->
         symbolo(exp)
+        neq(exp, true)
+        neq(exp, false)
         lookupo(exp, env, typ)
+
+      {t, cond_, then_, else_} ->
+        eq([:if, cond_, then_, else_], exp)
+        has_typ(cond_, env, typ_env, :Bool)
+        eq(t, typ)
+        has_typ(then_, env, typ_env, t)
+        has_typ(else_, env, typ_env, t)
 
       # T-TAbs
       {typ_var, body, body_typ, new_typ_env} ->
@@ -34,7 +51,6 @@ defmodule TypeChecker.SysFTest do
         eq([:lambda, [x | xt], body], exp)
         eq([:fn, xt, body_typ], typ)
         eq(closure_env, [[x | xt] | env])
-        all_type_in_listo(xt, typ_env)
         has_typ(body, closure_env, typ_env, body_typ)
 
       # T-App
@@ -91,38 +107,6 @@ defmodule TypeChecker.SysFTest do
     end
   end
 
-  def symbol_in_listo(x, list) do
-    fresh {y, rest} do
-      eq([y | rest], list)
-
-      condu do
-        _ ->
-          eq(x, y)
-
-        _ ->
-          neq(x, y)
-          symbol_in_listo(x, rest)
-      end
-    end
-  end
-
-  def all_type_in_listo(t, list) do
-    condi do
-      _ ->
-        symbolo(t)
-        symbol_in_listo(t, list)
-
-      {a, b} ->
-        eq(t, [:fn, a, b])
-        all_type_in_listo(a, list)
-        all_type_in_listo(b, list)
-
-      {x, tt} ->
-        eq(t, [:forall, x, tt])
-        all_type_in_listo(tt, [x | list])
-    end
-  end
-
   def not_in_listo(x, list) do
     condi do
       _ ->
@@ -136,7 +120,7 @@ defmodule TypeChecker.SysFTest do
   end
 
   test "generating some valid programs" do
-    pairs = run(30, {exp, t}, do: has_typ_closed(exp, t))
+    pairs = run(50, {exp, t}, do: has_typ_closed(exp, t))
 
     for pair <- pairs do
       case pair do
@@ -149,29 +133,66 @@ defmodule TypeChecker.SysFTest do
     end
 
     # Output:
-    # λ (x:S). x : S -> S
-    # Λ T. λ (y:A). y : ∀ T. A -> A
-    # λ (x:S). Λ A. x : S -> ∀ A. S
-    # Λ T. Λ S. λ (z:B). z : ∀ T. ∀ S. B -> B
-    # λ (x:∀ S. S). (x) [A] : (∀ S. S) -> A
-    # λ (x:∀ S. A). (x) [B] : (∀ S. A) -> A
-    # Λ T. λ (y:A). Λ B. y : ∀ T. A -> ∀ B. A
-    # λ (x:S). λ (z:B). z : S -> B -> B
-    # λ (x:S). Λ A. Λ B. x : S -> ∀ A. ∀ B. S
-    # Λ T. Λ S. Λ A. λ (a:C). a : ∀ T. ∀ S. ∀ A. C -> C
-    # (Λ T. λ (y:T). y) [A] : A -> A
-    # Λ T. λ (y:∀ A. A). (y) [B] : ∀ T. (∀ A. A) -> B
-    # (Λ T. λ (y:A). y) [B] : A -> A
-    # λ (x:∀ S. ∀ S. A). (x) [B] : (∀ S. ∀ S. A) -> ∀ S. A
-    # λ (x:∀ S. S). Λ A. (x) [B] : (∀ S. S) -> ∀ A. B
-    # (Λ T. λ (y:∀ T. A). y) [B] : (∀ T. A) -> ∀ T. A
-    # Λ T. λ (y:∀ A. B). (y) [C] : ∀ T. (∀ A. B) -> B
-    # (Λ T. λ (y:T -> T). y) [A] : (A -> A) -> A -> A
-    # λ (x:∀ S. A). Λ B. (x) [C] : (∀ S. A) -> ∀ B. A
-    # λ (x:S). λ (z:B). x : S -> B -> S
-    # (Λ T. λ (y:∀ A. T). y) [B] : (∀ A. B) -> ∀ A. B
-    # Λ T. λ (y:A). λ (a:C). a : ∀ T. A -> C -> C
-    # Λ T. Λ S. λ (z:B). Λ C. z : ∀ T. ∀ S. B -> ∀ C. B
+    # (true) : Bool
+    # (false) : Bool
+    # ((if true true true)) : Bool
+    # ((if true true false)) : Bool
+    # Λ T. true : forall T. Bool
+    # ((if true false true)) : Bool
+    # Λ T. false : forall T. Bool
+    # ((if true false false)) : Bool
+    # ((if false true true)) : Bool
+    # (λ (x:Bool). true) : Bool -> Bool
+    # ((if true true (if true true true))) : Bool
+    # ((if false true false)) : Bool
+    # Λ T. (if true true true) : forall T. Bool
+    # ((if true true (if true true false))) : Bool
+    # Λ T. (if true true false) : forall T. Bool
+    # (λ (x:Bool). false) : Bool -> Bool
+    # ((if true true (if true false true))) : Bool
+    # ((if true false (if true true true))) : Bool
+    # Λ T. (if true false true) : forall T. Bool
+    # Λ T. Λ S. true : forall T. forall S. Bool
+    # ((if false false true)) : Bool
+    # ((if true true (if true false false))) : Bool
+    # ((if true false (if true true false))) : Bool
+    # Λ T. (if true false false) : forall T. Bool
+    # Λ T. Λ S. false : forall T. forall S. Bool
+    # ((if false false false)) : Bool
+    # λ (x:Bool). x : Bool -> Bool
+    # (Λ T. true) [S] : Bool
+    # ((if true true (if false true true))) : Bool
+  end
+
+  test "polymorphic identity function" do
+    exp = [:Lam, [:X], [:lambda, [:a | :X], :a]]
+    [t] = run(1, t, do: has_typ_closed(exp, t))
+
+    IO.puts(print(exp))
+    IO.puts(print_t(t))
+  end
+
+  test "typing u combinator" do
+    term = [
+      :lambda,
+      [:x | [:forall, :X, [:fn, :X, :X]]],
+      [[:TApp, :x, [:forall, :X, [:fn, :X, :X]]], :x]
+    ]
+
+    IO.puts(print(term))
+
+    for t <- run(1, t, do: has_typ_closed(term, t)) do
+      case t do
+        {t, _constr} ->
+          IO.puts(print_t(t))
+
+        t ->
+          IO.puts(print_t(t))
+      end
+    end
+
+    # λ (x:∀ X. X -> X). ((x) [∀ X. X -> X] x)
+    # (∀ X. X -> X) -> ∀ X. X -> X
   end
 
   test "parametricity demo" do
@@ -179,7 +200,7 @@ defmodule TypeChecker.SysFTest do
 
     IO.puts(print_t(t))
 
-    for exp <- run(4, exp, do: has_typ_closed(exp, t)) do
+    for exp <- run(2, exp, do: has_typ_closed(exp, t)) do
       case exp do
         {exp, _constr} ->
           IO.puts(print(exp))
@@ -192,7 +213,7 @@ defmodule TypeChecker.SysFTest do
 
   @tag timeout: 600_000
   test "parametricity demo 2" do
-    t = [:forall, :X, [:fn, :X, [:fn, :X, :X]]]
+    t = [:forall, :X, [:fn, :Bool, [:fn, :X, [:fn, :X, :X]]]]
 
     IO.puts(print_t(t))
 
