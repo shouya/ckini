@@ -51,7 +51,6 @@ defmodule TypeChecker.STLCTest do
         eq([:lambda, [x | xt], body], exp)
         eq([:fn, xt, body_typ], typ)
         eq(closure_env, [[x | xt] | env])
-        in_listo(xt, typ_env)
         has_typ(body, closure_env, typ_env, body_typ)
 
       # T-App
@@ -188,6 +187,29 @@ defmodule TypeChecker.STLCTest do
     IO.puts(print_t(t))
   end
 
+  test "typing u combinator" do
+    term = [
+      :lambda,
+      [:x | [:forall, :X, [:fn, :X, :X]]],
+      [[:TApp, :x, [:forall, :X, [:fn, :X, :X]]], :x]
+    ]
+
+    IO.puts(print(term))
+
+    for t <- run(1, t, do: has_typ_closed(term, t)) do
+      case t do
+        {t, _constr} ->
+          IO.puts(print_t(t))
+
+        t ->
+          IO.puts(print_t(t))
+      end
+    end
+
+    # λ (x:∀ X. X -> X). ((x) [∀ X. X -> X] x)
+    # (∀ X. X -> X) -> ∀ X. X -> X
+  end
+
   test "parametricity demo" do
     t = [:forall, :X, [:fn, :X, [:fn, :X, :X]]]
 
@@ -240,6 +262,13 @@ defmodule TypeChecker.STLCTest do
   @pretty_sym_keys Map.keys(@pretty_sym)
 
   def print(exp) do
+    is_complex = fn
+      [:lambda, _, _] -> true
+      [:Lam, _, _] -> true
+      [:TApp, _, _] -> true
+      _ -> false
+    end
+
     case exp do
       [:lambda, [v | t], body] ->
         ["λ", " (", print(v), ":", print_t(t), "). ", print(body)]
@@ -251,7 +280,13 @@ defmodule TypeChecker.STLCTest do
         ["(", print(a), ") [", print_t(t), "]"]
 
       [rator, rand] ->
-        ["(", print(rator), " ", print(rand), ")"]
+        cond do
+          is_complex.(rator) ->
+            ["((", print(rator), ") ", print(rand), ")"]
+
+          true ->
+            ["(", print(rator), " ", print(rand), ")"]
+        end
 
       %Var{} = v ->
         to_string(v)
@@ -280,14 +315,17 @@ defmodule TypeChecker.STLCTest do
 
   def print_t(t) do
     case t do
-      [:fn, [:fn, t1, t2], t3] ->
-        "(#{print_t(t1)} -> #{print_t(t2)}) -> #{print_t(t3)}"
+      [:fn, t1 = [:fn, _, _], t2] ->
+        "(#{print_t(t1)}) -> #{print_t(t2)}"
+
+      [:fn, t1 = [:forall, _, _], t2] ->
+        "(#{print_t(t1)}) -> #{print_t(t2)}"
 
       [:fn, t1, t2] ->
         "#{print_t(t1)} -> #{print_t(t2)}"
 
       [:forall, a, t1] ->
-        "forall #{print_t(a)}. #{print_t(t1)}"
+        "∀ #{print_t(a)}. #{print_t(t1)}"
 
       %Var{} = v ->
         to_string(v)
