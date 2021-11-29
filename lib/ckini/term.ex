@@ -68,14 +68,13 @@ defmodule Ckini.Term do
   end
 
   @doc "Reify all variables in a term and its related constraints"
-  @spec reify(any(), Context.t()) :: any() | {any(), keyword()}
+  @spec reify(any(), Context.t()) :: {any(), keyword()}
   def reify(ts, ctx) when is_tuple(ts) do
     ts
     |> Tuple.to_list()
     |> reify(ctx)
     |> case do
       {xs, c} -> {List.to_tuple(xs), c}
-      xs -> List.to_tuple(xs)
     end
   end
 
@@ -86,9 +85,7 @@ defmodule Ckini.Term do
     ctx = Context.purify(ctx, r)
     term = Subst.deep_walk(r, t)
 
-    case Context.constraints(ctx) do
-      [] -> term
-      cs -> {term, cs}
-    end
+    cs = Context.constraints(ctx)
+    {term, cs}
   end
 end

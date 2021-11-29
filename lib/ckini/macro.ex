@@ -67,10 +67,13 @@ defmodule Ckini.Macro do
 
   Also see `run/3` for limited of possible values.
   """
-  defmacro run(vars, do: goals) do
+  defmacro run(vars, opts \\ [], do: goals) do
+    limit = Keyword.get(opts, :limit, :infinity)
+
     quote do
       unquote(vars)
-      |> run_stream(do: unquote(goals))
+      |> run_stream(opts, do: unquote(goals))
+      |> Elixir.Stream.take(unquote(limit))
       |> Elixir.Stream.to_list()
     end
   end
@@ -81,8 +84,15 @@ defmodule Ckini.Macro do
   This macro returns a stream instead of a list. You can use it
   instead of `run/2` macro to get a continuous stream of results.
   """
-  defmacro run_stream(vars, do: goals) do
+  defmacro run_stream(vars, opts \\ [], do: goals) do
     all_vars = extract_vars(vars)
+
+    return_constraints =
+      if Keyword.get(opts, :return_constraints, false) do
+        quote do: fn stm -> Elixir.Stream.map(stm, & &1) end
+      else
+        quote do: fn stm -> Elixir.Stream.map(stm, &elem(&1, 0)) end
+      end
 
     quote do
       unquote_splicing(generate_vars(all_vars))
@@ -92,44 +102,7 @@ defmodule Ckini.Macro do
       |> apply([Context.new()])
       |> Stream.map(&Term.reify(unquote(vars), &1))
       |> Stream.to_elixir_stream()
-    end
-  end
-
-  @doc """
-  Query for a number of possible values of a variable with a goal.
-
-  You can also query multiple variables by putting them in a tuple. The variable
-  will be declared automatically.
-
-  You can also provide multiple goals by putting them in the do block.
-
-  ## Examples
-
-      iex> use Ckini
-      iex> run(2, q) do
-      ...>   conde do
-      ...>     _ -> eq(q, 1)
-      ...>     _ -> eq(q, 2)
-      ...>     _ -> eq(q, 3)
-      ...>     _ -> eq(q, 4)
-      ...>   end
-      ...> end
-      [1, 2]
-
-  Also see `run/2` that allows querying unlimited possible values.
-  """
-  defmacro run(n, vars, do: goals) do
-    all_vars = extract_vars(vars)
-
-    quote do
-      unquote_splicing(generate_vars(all_vars))
-      goal = all(do: unquote(goals))
-
-      goal
-      |> apply([Context.new()])
-      |> Stream.map(&Term.reify(unquote(vars), &1))
-      |> Stream.take(unquote(n))
-      |> Stream.to_list()
+      |> then(unquote(return_constraints))
     end
   end
 
