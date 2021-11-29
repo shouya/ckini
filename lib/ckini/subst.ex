@@ -80,6 +80,7 @@ defmodule Ckini.Subst do
       Term.var?(vv) -> insert(new(), vv, ww)
       Term.var?(ww) -> insert(new(), ww, vv)
       Term.list?(vv) and Term.list?(ww) -> unify_list(s, vv, ww)
+      Term.tuple?(vv) and Term.tuple?(ww) -> unify_tuple(s, vv, ww)
       true -> nil
     end
   end
@@ -96,6 +97,13 @@ defmodule Ckini.Subst do
   @spec empty?(t()) :: boolean()
   def empty?(t) do
     is_empty(t)
+  end
+
+  @spec unify_tuple(t(), Term.t(), Term.t()) :: nil | t()
+  defp unify_tuple(s, t1, t2) do
+    t1l = Tuple.to_list(t1)
+    t2l = Tuple.to_list(t2)
+    unify_list(s, t1l, t2l)
   end
 
   @spec unify_list(t(), [Term.t()], [Term.t()]) :: nil | t()

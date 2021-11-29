@@ -12,6 +12,7 @@ defmodule Ckini.Term do
           | integer()
           | Var.t()
           | maybe_improper_list(t(), t())
+          | tuple()
 
   defguard is_symbol(t) when is_atom(t)
 
@@ -33,6 +34,8 @@ defmodule Ckini.Term do
   def list?([]), do: true
   def list?([_ | _]), do: true
   def list?(_), do: false
+
+  def tuple?(x), do: is_tuple(x)
 
   @doc "check if a term is concrete, i.e. the term doesn't contain any variable"
   @spec concrete?(t(), Subst.t()) :: boolean()
