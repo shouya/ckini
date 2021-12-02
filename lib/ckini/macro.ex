@@ -67,14 +67,21 @@ defmodule Ckini.Macro do
 
   Also see `run/3` for limited of possible values.
   """
-  defmacro run(vars, opts \\ [], do: goals) do
+  defmacro run(vars, opts) do
     limit = Keyword.get(opts, :limit, :infinity)
+    goals = Keyword.get(opts, :do)
+
+    take_fn =
+      case limit do
+        :infinity -> quote(do: & &1)
+        n when is_integer(n) -> quote(do: &Elixir.Stream.take(&1, unquote(n)))
+      end
 
     quote do
       unquote(vars)
-      |> run_stream(opts, do: unquote(goals))
-      |> Elixir.Stream.take(unquote(limit))
-      |> Elixir.Stream.to_list()
+      |> run_stream(unquote(opts), do: unquote(goals))
+      |> then(unquote(take_fn))
+      |> Elixir.Enum.to_list()
     end
   end
 
