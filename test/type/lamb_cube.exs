@@ -176,14 +176,13 @@ defmodule LambdaCubeTest do
           has_typeo(sys, ctx, rand, a)
           subst_varo(b, x, rand, ty)
 
-        {x, a, b, s1, s2} ->
+        {x, a, b, s1} ->
           # product
           eq({:pi, x, a, b}, t)
           symbolo(x)
-          eq(ty, s2)
           has_typeo(sys, ctx, a, s1)
-          has_typeo(sys, [{x, a} | ctx], b, s2)
-          systemo(sys, s1, s2)
+          has_typeo(sys, [{x, a} | ctx], b, ty)
+          systemo(sys, s1, ty)
 
         {x, b, ta, tb, s1, s2} ->
           # abs
