@@ -62,19 +62,13 @@ defmodule QuineTest do
   # @tag :skip
   @tag timeout: 600_000
   test "code for testing" do
-    for p <- run(10, q, do: evalo(q, [], q)) do
-      case p do
-        {t, _c} ->
-          IO.puts(print(t))
-
-        t ->
-          IO.puts(print(t))
-      end
+    for t <- run(q, limit: 10, do: evalo(q, [], q)) do
+      IO.puts(print(t))
     end
   end
 
   test "test existing quine" do
-    assert [1] = run(1, q, do: evalo(:x, [[:x | 1]], q))
+    assert [1] = run(q, limit: 1, do: evalo(:x, [[:x | 1]], q))
 
     quine = [
       [:lambda, [:x], [:list, :x, [:list, [:quote, :quote], :x]]],
@@ -90,7 +84,7 @@ defmodule QuineTest do
       [:quote, [:lambda, [:x], [:list, :x, [:list, [:quote, :quote], :x]]]]
     ]
 
-    assert [_ | _] = run(200, q, do: evalo(q, [], quine))
+    assert [_ | _] = run(q, limit: 200, do: evalo(q, [], quine))
   end
 
   test "guided generation of quine - 2" do
@@ -100,7 +94,7 @@ defmodule QuineTest do
     ]
 
     result =
-      run(1, q) do
+      run(q, limit: 1) do
         fresh {x, y} do
           eq(q, [[:lambda, [:x], x], y])
         end
@@ -113,7 +107,7 @@ defmodule QuineTest do
 
   @tag timeout: 600_000
   test "quine generation" do
-    assert [_] = run(1, q, do: evalo(q, [], q))
+    assert [_] = run(q, limit: 1, do: evalo(q, [], q))
   end
 
   @pretty_sym %{

@@ -67,7 +67,8 @@ defmodule Ckini.Macro do
 
   Also see `run/3` for limited of possible values.
   """
-  defmacro run(vars, opts) do
+  defmacro run(vars, opts, do_blk \\ []) do
+    opts = Keyword.merge(opts, do_blk)
     limit = Keyword.get(opts, :limit, :infinity)
     goals = Keyword.get(opts, :do)
 
